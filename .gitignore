@@ -1,0 +1,19 @@
+# Ignore PyCharm IDE settings
+.idea/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore system files (Mac & Linux)
+.DS_Store
+
+# Ignore Locust result files (optional)
+*.csv
+locust_results/
