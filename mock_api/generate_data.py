@@ -1,37 +1,29 @@
 import json
-from faker import Faker
-from datetime import datetime, timedelta
+import os
+import random
 
-fake = Faker()
-
-DATA_FILE = "mock_api/data.json"
+DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 
 # Generate 200 unique users
 users = [{"username": f"user{i}", "password": f"pass{i}"} for i in range(1, 201)]
 
-# Generate 200 unique bookings with checkin and checkout fields
-bookings = []
-for i in range(1, 201):
-    checkin_date = datetime(2025, 1, 1) + timedelta(days=fake.random_int(min=0, max=365))
-    checkout_date = checkin_date + timedelta(days=fake.random_int(min=1, max=14))
-
-    booking = {
+# Generate 200 unique bookings, each linked to a specific user
+bookings = [
+    {
         "id": i,
-        "firstname": fake.first_name(),
-        "lastname": fake.last_name(),
-        "totalprice": fake.random_int(min=100, max=500),
-        "depositpaid": fake.boolean(),
-        "checkin": checkin_date.strftime("%Y-%m-%d"),
-        "checkout": checkout_date.strftime("%Y-%m-%d"),
-        "additionalneeds": fake.random_element(elements=["Breakfast", "WiFi", "Parking", "Gym", "Extra bed", "None"])
+        "firstname": random.choice(["John", "Alice", "Mike", "Emma", "David"]),
+        "lastname": random.choice(["Doe", "Smith", "Brown", "Johnson", "Williams"]),
+        "totalprice": random.randint(100, 500),
+        "depositpaid": random.choice([True, False]),
+        "checkin": f"2025-01-{str(random.randint(1, 28)).zfill(2)}",
+        "checkout": f"2025-02-{str(random.randint(1, 28)).zfill(2)}",
+        "additionalneeds": random.choice(["Breakfast", "WiFi", "Parking", "None"]),
     }
-    bookings.append(booking)
+    for i in range(1, 201)  # Ensure bookings have unique IDs from 1 to 200
+]
 
-# Create final data structure
-data = {"users": users, "bookings": bookings}
-
-# Save to JSON file
+# Save data to JSON file
 with open(DATA_FILE, "w") as f:
-    json.dump(data, f, indent=4)
+    json.dump({"users": users, "bookings": bookings}, f, indent=4)
 
-print("✅ Data generation complete! 200 users and 200 bookings created.")
+print("✅ Successfully generated 200 users and 200 matching bookings!")
