@@ -70,7 +70,7 @@ async def create_booking(
     save_data(data)
 
     # Log booking creation details
-    print(f"📌 NEW BOOKING: {new_booking}")
+    print(f"📌 NEW BOOKING CREATED: {new_booking}")
 
     return {"message": "Booking created", "booking": new_booking}
 

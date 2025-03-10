@@ -2,6 +2,7 @@ from locust import HttpUser, task, between, events
 import json
 import os
 import threading
+import random
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
@@ -45,7 +46,7 @@ class BookingUser(HttpUser):
 
     @task
     def update_booking(self):
-        """Update the assigned booking ID"""
+        """Update the assigned booking ID with at least one changed field"""
         if not hasattr(self, "token") or not self.token:
             print(f"ERROR: No authentication token available for user {self.user['username']}")
             return
@@ -54,17 +55,33 @@ class BookingUser(HttpUser):
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
-        payload = {
-            "firstname": self.booking.get("firstname", "Test"),
-            "lastname": self.booking.get("lastname", "User"),
-            "totalprice": self.booking.get("totalprice", 200),
-            "depositpaid": self.booking.get("depositpaid", True),
-            "checkin": self.booking.get("checkin", "2025-01-01"),
-            "checkout": self.booking.get("checkout", "2025-01-10"),
-            "additionalneeds": self.booking.get("additionalneeds", "None")
-        }
 
-        response = self.client.put(f"/booking/{self.booking['id']}", headers=headers, json=payload)
+        # Define the possible changes
+        updated_booking = self.booking.copy()
+
+        fields_to_update = [
+            "firstname", "lastname", "totalprice", "depositpaid", "checkin", "checkout", "additionalneeds"
+        ]
+
+        # Ensure at least one field is changed
+        field_to_modify = random.choice(fields_to_update)
+
+        if field_to_modify == "firstname":
+            updated_booking["firstname"] = random.choice(["Alice", "Bob", "Charlie", "David"])
+        elif field_to_modify == "lastname":
+            updated_booking["lastname"] = random.choice(["Johnson", "Williams", "Brown", "Davis"])
+        elif field_to_modify == "totalprice":
+            updated_booking["totalprice"] = random.randint(100, 1000)
+        elif field_to_modify == "depositpaid":
+            updated_booking["depositpaid"] = not updated_booking["depositpaid"]
+        elif field_to_modify == "checkin":
+            updated_booking["checkin"] = f"2025-01-{random.randint(1, 28):02d}"
+        elif field_to_modify == "checkout":
+            updated_booking["checkout"] = f"2025-02-{random.randint(1, 28):02d}"
+        elif field_to_modify == "additionalneeds":
+            updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
+
+        response = self.client.put(f"/booking/{self.booking['id']}", headers=headers, json=updated_booking)
 
         if response.status_code not in [200, 404]:
             print(f"ERROR: {response.status_code} - {response.text}")
