@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Request
 import json
 import os
 
@@ -26,12 +26,20 @@ def save_data(data):
 
 
 @app.post("/auth")
-async def authenticate_user(username: str = Body(...), password: str = Body(...)):
-    """Mock authentication endpoint"""
+async def authenticate_user(request: Request, username: str = Body(...), password: str = Body(...)):
+    """Mock authentication endpoint with detailed logging"""
     data = load_data()
+
+    # Log the authentication request details
+    print(f"🔹 AUTH REQUEST: Username: {username}, Password: {password}")
+
     for user in data["users"]:
         if user["username"] == username and user["password"] == password:
-            return {"token": f"fake-token-{username}"}
+            token = f"fake-token-{username}"
+            print(f"✅ AUTH SUCCESS: User '{username}' authenticated. Token: {token}")
+            return {"token": token}
+
+    print(f"❌ AUTH FAILURE: Invalid credentials for user '{username}'")
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
@@ -60,6 +68,10 @@ async def create_booking(
     }
     data["bookings"].append(new_booking)
     save_data(data)
+
+    # Log booking creation details
+    print(f"📌 NEW BOOKING: {new_booking}")
+
     return {"message": "Booking created", "booking": new_booking}
 
 
@@ -78,6 +90,7 @@ async def update_booking(
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
+            old_booking = booking.copy()  # Store the old data for comparison
             booking.update({
                 "firstname": firstname,
                 "lastname": lastname,
@@ -88,8 +101,15 @@ async def update_booking(
                 "additionalneeds": additionalneeds
             })
             save_data(data)
+
+            # Log booking update details
+            print(f"✏️ BOOKING UPDATED: ID {booking_id}")
+            print(f"   OLD DATA: {old_booking}")
+            print(f"   NEW DATA: {booking}")
+
             return {"message": "Booking updated"}
 
+    print(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
 
 
@@ -99,7 +119,10 @@ async def get_booking(booking_id: int):
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
+            print(f"📄 FETCH BOOKING: {booking}")
             return booking
+
+    print(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
 
 
@@ -111,6 +134,11 @@ async def delete_booking(booking_id: int):
         if booking["id"] == booking_id:
             data["bookings"].remove(booking)
             save_data(data)
+
+            # Log booking deletion details
+            print(f"🗑️ BOOKING DELETED: ID {booking_id}")
+
             return {"message": "Booking deleted"}
 
+    print(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
