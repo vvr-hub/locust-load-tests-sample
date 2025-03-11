@@ -15,6 +15,7 @@ import json
 import os
 import threading
 import random
+from config import MOCK_API_BASE_URL, ENDPOINTS
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
@@ -47,10 +48,9 @@ class BookingUser(HttpUser):
         self.booking = shared_data["bookings"][self.user_index]
 
         # Authenticate the user
-        response = self.client.post(
-            "/auth",
-            json={"username": self.user["username"], "password": self.user["password"]},
-        )
+        response = self.client.post(MOCK_API_BASE_URL + ENDPOINTS["auth"],
+                                    json={"username": self.user["username"], "password": self.user["password"]},
+                                    )
 
         if response.status_code == 200:
             self.token = response.json().get("token", "")
@@ -96,7 +96,11 @@ class BookingUser(HttpUser):
         elif field_to_modify == "additionalneeds":
             updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
 
-        response = self.client.put(f"/booking/{self.booking['id']}", headers=headers, json=updated_booking)
+        response = self.client.put(
+            MOCK_API_BASE_URL + ENDPOINTS["booking"].format(id=self.booking["id"]),
+            headers=headers,
+            json=updated_booking
+        )
 
         if response.status_code == 200:
             print(f"✅ UPDATED BOOKING {self.booking['id']} - {field_to_modify}: {updated_booking[field_to_modify]}")

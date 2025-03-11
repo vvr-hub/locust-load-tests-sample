@@ -14,6 +14,7 @@ from locust import HttpUser, task, between, events
 import json
 import os
 import threading
+from config import MOCK_API_BASE_URL, ENDPOINTS
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
@@ -47,7 +48,7 @@ class AuthUser(HttpUser):
     @task
     def authenticate_user(self):
         """Perform authentication request for the assigned user"""
-        response = self.client.post("/auth", json={
+        response = self.client.post(MOCK_API_BASE_URL + ENDPOINTS["auth"], json={
             "username": self.user["username"],
             "password": self.user["password"]
         })
