@@ -8,7 +8,7 @@ fake = Faker()
 
 # Define the number of users and bookings based on load test requirements
 NUM_USERS = 1000  # Max for locustfile_auth.py
-NUM_BOOKINGS = 500  # Max for locustfile.py (ensuring user-to-booking mapping)
+NUM_BOOKINGS = 500  # Max for locustfile_update_booking.py (ensuring user-to-booking mapping)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 
@@ -28,8 +28,8 @@ def generate_users(num_users):
 def generate_bookings(num_bookings):
     """Generate unique bookings"""
     bookings = []
-    start_date = datetime.date(2025, 1, 1)  # Correct date format
-    end_date = datetime.date(2025, 12, 31)  # Correct date format
+    start_date = datetime.date(2025, 1, 1)
+    end_date = datetime.date(2025, 12, 31)
 
     for i in range(num_bookings):
         checkin = fake.date_between(start_date=start_date, end_date=end_date)

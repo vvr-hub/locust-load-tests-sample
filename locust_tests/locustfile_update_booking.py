@@ -23,7 +23,7 @@ global_user_index = -1  # Ensures unique user indexing across all threads
 
 
 class BookingUser(HttpUser):
-    wait_time = between(1, 3)  # Adds a delay between requests
+    wait_time = between(1, 3)  # Adds a delay between requests, common for load tests
 
     def on_start(self):
         """Load users and bookings from shared memory instead of reading file per user"""
