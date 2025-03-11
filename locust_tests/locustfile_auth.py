@@ -11,10 +11,10 @@ Locust Scalability & Stress Test for Authentication (/auth endpoint)
 """
 
 from locust import HttpUser, task, between, events
-import json
-import os
 import threading
 from config import MOCK_API_BASE_URL, ENDPOINTS
+from data_loader import load_data
+from utils import log_auth_response
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
@@ -48,30 +48,22 @@ class AuthUser(HttpUser):
     @task
     def authenticate_user(self):
         """Perform authentication request for the assigned user"""
-        response = self.client.post(MOCK_API_BASE_URL + ENDPOINTS["auth"], json={
-            "username": self.user["username"],
-            "password": self.user["password"]
-        })
+        response = self.client.post(
+            MOCK_API_BASE_URL + ENDPOINTS["auth"],
+            json={
+                "username": self.user["username"],
+                "password": self.user["password"]
+            }
+        )
 
-        if response.status_code == 200:
-            token = response.json().get("token", "")
-            print(f"✅ AUTH SUCCESS: User '{self.user['username']}' authenticated. Token: {token}")
-        else:
-            print(f"❌ AUTH FAILURE: {response.status_code} - {response.text}")
+        log_auth_response(self.user["username"], response)
 
 
 # Load data.json **ONCE** before tests start
 def on_locust_init(environment, **kwargs):
+    """Load user data once before the test starts"""
     global shared_data
-
-    data_path = os.path.join(os.path.dirname(__file__), "../mock_api/data.json")
-
-    try:
-        with open(data_path, "r") as f:
-            shared_data = json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
-        print("ERROR: Failed to load data.json")
-        environment.runner.quit()
+    shared_data = load_data()
 
     if not shared_data or "users" not in shared_data:
         print("ERROR: Invalid data.json content")

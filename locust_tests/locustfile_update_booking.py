@@ -11,15 +11,15 @@ Locust Load & Performance Test for Update Booking (/booking/{id} endpoint)
 """
 
 from locust import HttpUser, task, between, events
-import json
-import os
 import threading
 import random
 from config import MOCK_API_BASE_URL, ENDPOINTS
+from data_loader import load_data
+from utils import log_booking_update
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
-shared_data = None  # This will store the user and booking data
+shared_data = None  # Stores user and booking data
 global_user_index = -1  # Ensures unique user indexing across all threads
 
 
@@ -48,9 +48,10 @@ class BookingUser(HttpUser):
         self.booking = shared_data["bookings"][self.user_index]
 
         # Authenticate the user
-        response = self.client.post(MOCK_API_BASE_URL + ENDPOINTS["auth"],
-                                    json={"username": self.user["username"], "password": self.user["password"]},
-                                    )
+        response = self.client.post(
+            MOCK_API_BASE_URL + ENDPOINTS["auth"],
+            json={"username": self.user["username"], "password": self.user["password"]},
+        )
 
         if response.status_code == 200:
             self.token = response.json().get("token", "")
@@ -102,26 +103,14 @@ class BookingUser(HttpUser):
             json=updated_booking
         )
 
-        if response.status_code == 200:
-            print(f"✅ UPDATED BOOKING {self.booking['id']} - {field_to_modify}: {updated_booking[field_to_modify]}")
-        elif response.status_code == 404:
-            print(f"⚠️ Booking ID {self.booking['id']} not found.")
-        else:
-            print(f"❌ ERROR {response.status_code}: {response.text}")
+        log_booking_update(self.booking["id"], field_to_modify, updated_booking[field_to_modify], response)
 
 
 # Load data.json **ONCE** before tests start
 def on_locust_init(environment, **kwargs):
+    """Load user and booking data once before the test starts"""
     global shared_data
-
-    data_path = os.path.join(os.path.dirname(__file__), "../mock_api/data.json")
-
-    try:
-        with open(data_path, "r") as f:
-            shared_data = json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
-        print("ERROR: Failed to load data.json")
-        environment.runner.quit()
+    shared_data = load_data()
 
     if not shared_data or "users" not in shared_data or "bookings" not in shared_data:
         print("ERROR: Invalid data.json content")
