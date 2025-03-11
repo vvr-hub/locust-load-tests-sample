@@ -4,65 +4,77 @@ Locust Scalability & Stress Test for Authentication (/auth endpoint)
 - **Test Type:** Scalability & Stress Test
 - **Purpose:** Measures the ability to handle authentication requests under high load.
 - **Endpoint:** `/auth` (POST)
-- **Concurrent Users:**
-- **Spawn Rate:**
-- **Wait Time:**
-- **Duration:**
+- **Concurrent Users:** 500 - 1000
+- **Spawn Rate:** 50/sec
+- **Wait Time:** 0 - 1 sec
+- **Duration (run-time):** 10 minutes
 """
 
 from locust import HttpUser, task, between, events
 import json
 import os
-import random
 import threading
 
+# Global storage for shared data.json content
 data_lock = threading.Lock()
-shared_users = None
+shared_data = None  # This will store the user data
+global_user_index = -1  # Ensure correct user indexing across all threads
+
 
 class AuthUser(HttpUser):
-    wait_time = between(1, 2)  # Simulate users logging in quickly
+    wait_time = between(0, 1)  # Minimal wait time for stress testing
 
     def on_start(self):
-        """Load users from shared memory"""
-        global shared_users
+        """Load users from shared memory instead of reading file per user"""
+        global global_user_index, shared_data
 
-        if shared_users is None:
-            print("ERROR: Shared users data is not loaded. Test will stop.")
+        if shared_data is None:
+            print("ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
-    @task
-    def authenticate(self):
-        """Repeatedly authenticate users (one per iteration)"""
-        global shared_users
-
         with data_lock:
-            self.user = random.choice(shared_users)  # Pick any user randomly for authentication
+            global_user_index += 1
+            self.user_index = global_user_index  # Assign unique index
 
-        request_body = {"username": self.user["username"], "password": self.user["password"]}
-        response = self.client.post("/auth", json=request_body)
+        if self.user_index >= len(shared_data["users"]):
+            print(f"ERROR: More users requested ({self.user_index}) than available")
+            self.environment.runner.quit()
+            return
+
+        self.user = shared_data["users"][self.user_index]
+
+    @task
+    def authenticate_user(self):
+        """Perform authentication request for the assigned user"""
+        response = self.client.post("/auth", json={
+            "username": self.user["username"],
+            "password": self.user["password"]
+        })
 
         if response.status_code == 200:
-            response_body = response.json()
-            print(f"✅ SUCCESS: Authenticated user '{self.user['username']}' | Response: {response_body}")
+            token = response.json().get("token", "")
+            print(f"✅ AUTH SUCCESS: User '{self.user['username']}' authenticated. Token: {token}")
         else:
-            print(f"❌ ERROR: Authentication failed for user '{self.user['username']}' | Status: {response.status_code} | Response: {response.text}")
+            print(f"❌ AUTH FAILURE: {response.status_code} - {response.text}")
 
+
+# Load data.json **ONCE** before tests start
 def on_locust_init(environment, **kwargs):
-    """Load users from data.json on Locust start"""
-    global shared_users
+    global shared_data
+
     data_path = os.path.join(os.path.dirname(__file__), "../mock_api/data.json")
 
     try:
         with open(data_path, "r") as f:
-            data = json.load(f)
-            shared_users = data.get("users", [])
+            shared_data = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         print("ERROR: Failed to load data.json")
         environment.runner.quit()
 
-    if not shared_users:
+    if not shared_data or "users" not in shared_data:
         print("ERROR: Invalid data.json content")
         environment.runner.quit()
+
 
 events.init.add_listener(on_locust_init)

@@ -4,10 +4,10 @@ Locust Load & Performance Test for Update Booking (/booking/{id} endpoint)
 - **Test Type:** Load & Performance Test
 - **Purpose:** Simulates real-world booking updates with logged-in users.
 - **Endpoint:** `/booking/{id}` (PUT)
-- **Concurrent Users:**
-- **Spawn Rate:**
-- **Wait Time:**
-- **Duration:**
+- **Concurrent Users:** 200 - 500
+- **Spawn Rate:** 10/sec
+- **Wait Time:** 1 - 3 sec
+- **Duration (run-time):** 3 - 5 minutes
 """
 
 from locust import HttpUser, task, between, events
@@ -19,7 +19,7 @@ import random
 # Global storage for shared data.json content
 data_lock = threading.Lock()
 shared_data = None  # This will store the user and booking data
-global_user_index = -1  # Ensure correct user indexing across all threads
+global_user_index = -1  # Ensures unique user indexing across all threads
 
 
 class BookingUser(HttpUser):
@@ -39,7 +39,7 @@ class BookingUser(HttpUser):
             self.user_index = global_user_index  # Assign unique index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"ERROR: More users requested ({self.user_index}) than available")
+            print(f"ERROR: More users requested ({self.user_index}) than available.")
             self.environment.runner.quit()
             return
 
@@ -47,8 +47,11 @@ class BookingUser(HttpUser):
         self.booking = shared_data["bookings"][self.user_index]
 
         # Authenticate the user
-        response = self.client.post("/auth",
-                                    json={"username": self.user["username"], "password": self.user["password"]})
+        response = self.client.post(
+            "/auth",
+            json={"username": self.user["username"], "password": self.user["password"]},
+        )
+
         if response.status_code == 200:
             self.token = response.json().get("token", "")
         else:
@@ -68,7 +71,7 @@ class BookingUser(HttpUser):
             "Content-Type": "application/json"
         }
 
-        # Define the possible changes
+        # Define the possible changes while keeping the 'id' unchanged
         updated_booking = self.booking.copy()
 
         fields_to_update = [
@@ -95,8 +98,12 @@ class BookingUser(HttpUser):
 
         response = self.client.put(f"/booking/{self.booking['id']}", headers=headers, json=updated_booking)
 
-        if response.status_code not in [200, 404]:
-            print(f"ERROR: {response.status_code} - {response.text}")
+        if response.status_code == 200:
+            print(f"✅ UPDATED BOOKING {self.booking['id']} - {field_to_modify}: {updated_booking[field_to_modify]}")
+        elif response.status_code == 404:
+            print(f"⚠️ Booking ID {self.booking['id']} not found.")
+        else:
+            print(f"❌ ERROR {response.status_code}: {response.text}")
 
 
 # Load data.json **ONCE** before tests start
