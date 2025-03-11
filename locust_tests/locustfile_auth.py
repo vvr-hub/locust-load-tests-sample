@@ -1,3 +1,15 @@
+"""
+Locust Scalability & Stress Test for Authentication (/auth endpoint)
+-------------------------------------------------------------------
+- **Test Type:** Scalability & Stress Test
+- **Purpose:** Measures the ability to handle authentication requests under high load.
+- **Endpoint:** `/auth` (POST)
+- **Concurrent Users:**
+- **Spawn Rate:**
+- **Wait Time:**
+- **Duration:**
+"""
+
 from locust import HttpUser, task, between, events
 import json
 import os

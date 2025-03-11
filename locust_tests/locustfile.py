@@ -1,3 +1,15 @@
+"""
+Locust Load & Performance Test for Update Booking (/booking/{id} endpoint)
+---------------------------------------------------------------------------
+- **Test Type:** Load & Performance Test
+- **Purpose:** Simulates real-world booking updates with logged-in users.
+- **Endpoint:** `/booking/{id}` (PUT)
+- **Concurrent Users:**
+- **Spawn Rate:**
+- **Wait Time:**
+- **Duration:**
+"""
+
 from locust import HttpUser, task, between, events
 import json
 import os
