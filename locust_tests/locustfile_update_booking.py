@@ -51,7 +51,7 @@ class BookingUser(HttpUser):
         # Authenticate the user
         response = self.client.post(
             f"{self.environment.host}{ENDPOINTS['auth']}",
-            json={"username": self.user["username"], "password": self.user["password"]}
+            json={"username": self.user["username"], "password": self.user["password"]},
         )
 
         if response.status_code == 200:
@@ -75,28 +75,33 @@ class BookingUser(HttpUser):
 
         # Define the possible changes while keeping the 'id' unchanged
         updated_booking = self.booking.copy()
-
         fields_to_update = [
             "firstname", "lastname", "totalprice", "depositpaid", "checkin", "checkout", "additionalneeds"
         ]
 
-        # Ensure at least one field is changed
-        field_to_modify = random.choice(fields_to_update)
+        # Ensure at least one field is modified
+        while True:
+            field_to_modify = random.choice(fields_to_update)
+            original_value = updated_booking[field_to_modify]
 
-        if field_to_modify == "firstname":
-            updated_booking["firstname"] = random.choice(["Alice", "Bob", "Charlie", "David"])
-        elif field_to_modify == "lastname":
-            updated_booking["lastname"] = random.choice(["Johnson", "Williams", "Brown", "Davis"])
-        elif field_to_modify == "totalprice":
-            updated_booking["totalprice"] = random.randint(100, 1000)
-        elif field_to_modify == "depositpaid":
-            updated_booking["depositpaid"] = not updated_booking["depositpaid"]
-        elif field_to_modify == "checkin":
-            updated_booking["checkin"] = f"2025-01-{random.randint(1, 28):02d}"
-        elif field_to_modify == "checkout":
-            updated_booking["checkout"] = f"2025-02-{random.randint(1, 28):02d}"
-        elif field_to_modify == "additionalneeds":
-            updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
+            if field_to_modify == "firstname":
+                updated_booking["firstname"] = random.choice(["Alice", "Bob", "Charlie", "David"])
+            elif field_to_modify == "lastname":
+                updated_booking["lastname"] = random.choice(["Johnson", "Williams", "Brown", "Davis"])
+            elif field_to_modify == "totalprice":
+                updated_booking["totalprice"] = random.randint(100, 1000)
+            elif field_to_modify == "depositpaid":
+                updated_booking["depositpaid"] = not updated_booking["depositpaid"]
+            elif field_to_modify == "checkin":
+                updated_booking["checkin"] = f"2025-01-{random.randint(1, 28):02d}"
+            elif field_to_modify == "checkout":
+                updated_booking["checkout"] = f"2025-02-{random.randint(1, 28):02d}"
+            elif field_to_modify == "additionalneeds":
+                updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
+
+            # Break loop if the value has changed
+            if updated_booking[field_to_modify] != original_value:
+                break
 
         response = self.client.put(
             f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",
