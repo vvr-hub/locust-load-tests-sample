@@ -82,8 +82,6 @@ python mock_api/generate_data.py
 
 Make sure the Mock API is running before executing any of the following Locust commands.
 
-## 🚀 Running Locust Tests
-
 ### 🏆 Authentication Scalability & Stress Test (`/auth` endpoint)
 
 | **Test Scenario**                                                                                                            | **Command**                                                                                             |
@@ -104,7 +102,7 @@ Make sure the Mock API is running before executing any of the following Locust c
 
 - If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
 - If you **explicitly specify `--host`**, the tests will use the provided URL instead.
-- Running with `http://xyz-abc.def.com` as `--host` is only for testing failed scenarios, as it is a non-existent URL.
+- Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
 
 ### 📌 Chaos Testing
 
