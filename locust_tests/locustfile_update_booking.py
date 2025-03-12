@@ -24,6 +24,7 @@ global_user_index = -1  # Ensures unique user indexing across all threads
 
 
 class BookingUser(HttpUser):
+    host = MOCK_API_BASE_URL  # Uses default from config, overridden by --host
     wait_time = between(1, 3)  # Adds a delay between requests, common for load tests
 
     def on_start(self):
@@ -49,8 +50,8 @@ class BookingUser(HttpUser):
 
         # Authenticate the user
         response = self.client.post(
-            MOCK_API_BASE_URL + ENDPOINTS["auth"],
-            json={"username": self.user["username"], "password": self.user["password"]},
+            f"{self.environment.host}{ENDPOINTS['auth']}",
+            json={"username": self.user["username"], "password": self.user["password"]}
         )
 
         if response.status_code == 200:
@@ -98,7 +99,7 @@ class BookingUser(HttpUser):
             updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
 
         response = self.client.put(
-            MOCK_API_BASE_URL + ENDPOINTS["booking"].format(id=self.booking["id"]),
+            f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",
             headers=headers,
             json=updated_booking
         )

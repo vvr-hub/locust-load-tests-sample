@@ -23,6 +23,7 @@ global_user_index = -1  # Ensure correct user indexing across all threads
 
 
 class AuthUser(HttpUser):
+    host = MOCK_API_BASE_URL  # Uses default from config, overridden by --host
     wait_time = between(0, 1)  # Minimal wait time for stress testing
 
     def on_start(self):
@@ -49,11 +50,8 @@ class AuthUser(HttpUser):
     def authenticate_user(self):
         """Perform authentication request for the assigned user"""
         response = self.client.post(
-            MOCK_API_BASE_URL + ENDPOINTS["auth"],
-            json={
-                "username": self.user["username"],
-                "password": self.user["password"]
-            }
+            f"{self.environment.host}{ENDPOINTS['auth']}",
+            json={"username": self.user["username"], "password": self.user["password"]}
         )
 
         log_auth_response(self.user["username"], response)

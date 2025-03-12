@@ -3,17 +3,19 @@
 ## Overview
 
 This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**. It
-simulates real-world API interactions for authentication and booking updates.
+simulates real-world API interactions for user authentication and (hotel) booking updates.
 
 Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
 
 ## Features
 
 ✅ **Load & Performance Testing** for booking updates  
-✅ **Scalability & Stress Testing** for authentication  
+✅ **Scalability & Stress Testing** for user authentication  
 ✅ **Realistic Think-Time Patterns** for better user simulation  
 ✅ **Chaos Testing** - simulate API failures  
 ✅ **Centralised Configurations** for easy setup  
+✅ **Configurable Test Environment** - Easily switch between different environments (Example: local mock API, staging,
+demo)  
 ✅ **Best Practices Implemented** (see list below)
 
 ---
@@ -80,23 +82,31 @@ python mock_api/generate_data.py
 
 Make sure the Mock API is running before executing any of the following Locust commands.
 
-### **📌 1. Authentication Scalability & Stress Test**
+## 🚀 Running Locust Tests
 
-This test simulates 1000 concurrent users authenticating.
+### 🏆 Authentication Scalability & Stress Test (`/auth` endpoint)
 
-```sh
-locust -f locust_tests/locustfile_auth.py --host=http://localhost:8000 --users 1000 --spawn-rate 50 --run-time 10m
-```
+| **Test Scenario**                                                                                                            | **Command**                                                                                             |
+|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_auth.py --users 1000 --spawn-rate 50 --run-time 10m`                              |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_auth.py --host=http://localhost:8000 --users 1000 --spawn-rate 50 --run-time 10m` |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_auth.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 10m` |
 
-### **📌 2. Booking Update Load & Performance Test**
+### 🔄 Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
 
-This test simulates 500 concurrent users updating bookings.
+| **Test Scenario**                                                                                                            | **Command**                                                                                                      |
+|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m`                               |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m`  |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m` |
 
-```sh
-locust -f locust_tests/locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m
-```
+### 💡 Notes:
 
-### **📌 3. Chaos Testing**
+- If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
+- If you **explicitly specify `--host`**, the tests will use the provided URL instead.
+- Running with `http://xyz-abc.def.com` as `--host` is only for testing failed scenarios, as it is a non-existent URL.
+
+### 📌 Chaos Testing
 
 To test system **recovery after API failures** with some manual intervention:
 
@@ -114,22 +124,24 @@ To test system **recovery after API failures** with some manual intervention:
 
 The following best practices have been implemented:
 
-✅ Avoid hardcoding base URLs & endpoints
-✅ Centralised user & booking data loading
-✅ Reusable utilities for authentication & data modification
-✅ Logging for debugging & monitoring
-✅ Separate test files for different scenarios
-✅ Realistic Think-Time Patterns for better user simulation
+- Avoid hardcoding base URLs & endpoints (Centralized in `config.py`)
+- Centralised user & booking data loading (`data_loader.py`)
+- Reusable utilities for authentication & data modification (`utils.py`)
+- Logging for debugging & monitoring (API logs + Locust stats)
+- Separate test files for different scenarios (authentication & update booking tests)
+- Configurable Test Environment - Supports running tests against different environments (mock API, staging, etc)
+- Realistic Think-Time Patterns for better user simulation
 
 ## 🛠 Project Structure
 
-locust-load-tests-sample/
-│── mock_api/
+```
+📦 locust-load-tests-sample/
+├── 📂 mock_api/
 │ ├── api.py            # Mock API with authentication & booking endpoints
 │ ├── generate_data.py  # Generates test data (users & bookings)
 │ ├── data.json         # Stores generated test users & bookings for the tests
 │ 
-│── locust_tests/
+├── 📂 locust_tests/
 │ ├── locustfile_auth.py            # Authentication Stress Test
 │ ├── locustfile_update_booking.py  # Booking Update Load Test
 │ ├── config.py                     # Centralised Base URLs & Endpoints
@@ -138,6 +150,7 @@ locust-load-tests-sample/
 │ 
 │── requirements.txt                # Dependencies
 │── README.md                       # Project Documentation
+```
 
 **NOTE:** The data.json file acts as a simple database for the Mock API.providing a static data source.
 The mock_api/api.py reads and writes data from data.json.
