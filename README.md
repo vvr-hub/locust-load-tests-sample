@@ -84,25 +84,27 @@ Make sure the Mock API is running before executing any of the following Locust c
 
 ### 🏆 Authentication Scalability & Stress Test (`/auth` endpoint)
 
-| **Test Scenario**                                                                                                            | **Command**                                                                                             |
-|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_auth.py --users 1000 --spawn-rate 50 --run-time 10m`                              |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_auth.py --host=http://localhost:8000 --users 1000 --spawn-rate 50 --run-time 10m` |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_auth.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 10m` |
+| **Test Scenario**                                                                                                            | **Command**                                                                                                              |
+|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_auth.py --users 1000 --spawn-rate 50 --run-time 10m --stop-timeout 5`                              |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_auth.py --host=http://localhost:8000 --users 1000 --spawn-rate 50 --run-time 10m --stop-timeout 5` |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_auth.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 10m --stop-timeout 5` |
 
 ### 🔄 Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
 
-| **Test Scenario**                                                                                                            | **Command**                                                                                                      |
-|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m`                               |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m`  |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m` |
+| **Test Scenario**                                                                                                            | **Command**                                                                                                                       |
+|------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                              |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`|
 
 ### 💡 Notes:
 
 - If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
 - If you **explicitly specify `--host`**, the tests will use the provided URL instead.
 - Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
+
+- The **--stop-timeout 5** parameter **allows users** to gracefully stop all active tasks before **shutting down** the test. When you stop the test manually (`Ctrl + C`) or when the test reaches its specified `run-time` limit, Locust will **wait for up to 5 seconds** before forcing users to stop (giving **active requests** time to complete before shut down).
 
 ### 📌 Chaos Testing
 
