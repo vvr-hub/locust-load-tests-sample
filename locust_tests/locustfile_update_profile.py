@@ -11,21 +11,21 @@ Locust Load Test for Updating User Profile (/update-profile/{id} endpoint)
 """
 
 from locust import HttpUser, task, between, events
-import threading
-import random
 import os
+import random
+import threading
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
-from utils import log_profile_update
+from utils import log_profile_update  # Ensure logging consistency with other tests
 
-# Global storage for shared data.json content
+# Global variables
 data_lock = threading.Lock()
-shared_data = None  # Stores user data
-global_user_index = -1  # Ensures unique user indexing across all threads
+shared_data = None
+global_user_index = -1  # Ensures each user is assigned a unique ID
 
 
 def generate_random_email():
-    """Generate a unique random email address"""
+    """Generate a random email address"""
     domains = ["example.com", "test.com", "sample.org"]
     name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=7))
     domain = random.choice(domains)
@@ -33,8 +33,8 @@ def generate_random_email():
 
 
 def select_random_photo():
-    """Select a random profile photo ensuring it differs from the old one"""
-    photos_dir = os.path.join(os.path.dirname(__file__), "profile_photos")
+    """Select a random profile photo from the available options"""
+    photos_dir = os.path.join(os.path.dirname(__file__), "profile_photos")  # Adjusted path
     if not os.path.exists(photos_dir):
         raise FileNotFoundError(f"❌ ERROR: Profile photos directory not found at {photos_dir}")
 
@@ -42,7 +42,8 @@ def select_random_photo():
     if not photos:
         raise FileNotFoundError("❌ ERROR: No profile photos found in the directory!")
 
-    return random.choice(photos)
+    selected_photo = random.choice(photos)
+    return os.path.join(photos_dir, selected_photo), selected_photo
 
 
 class UpdateProfileUser(HttpUser):
@@ -60,7 +61,7 @@ class UpdateProfileUser(HttpUser):
 
         with data_lock:
             global_user_index += 1
-            self.user_index = global_user_index  # Assign unique index
+            self.user_index = global_user_index
 
         if self.user_index >= len(shared_data["users"]):
             print(f"ERROR: More users requested ({self.user_index}) than available.")
@@ -94,19 +95,16 @@ class UpdateProfileUser(HttpUser):
         }
 
         new_email = generate_random_email()
+        try:
+            photo_path, photo_name = select_random_photo()
+        except FileNotFoundError as e:
+            print(f"❌ ERROR: {e}")
+            return
 
-        # Ensure new photo is different from old one
-        while True:
-            new_photo = select_random_photo()
-            if new_photo != self.user.get("profile_photo", ""):
-                break
-
-        # Load image file
-        photo_path = os.path.join(os.path.dirname(__file__), "profile_photos", new_photo)
         with open(photo_path, 'rb') as photo_file:
             files = {
                 "email": (None, new_email),
-                "profile_photo": (new_photo, photo_file, 'image/jpeg')
+                "profile_photo": (photo_name, photo_file, 'image/jpeg')
             }
             response = self.client.put(
                 f"{self.environment.host}{ENDPOINTS['update_profile'].format(id=self.user['id'])}",
@@ -114,15 +112,27 @@ class UpdateProfileUser(HttpUser):
                 files=files
             )
 
-        log_profile_update(self.user["id"], self.user["email"], new_email, self.user.get("profile_photo", ""),
-                           new_photo, response)
+        if response.status_code == 200:
+            updated_user = response.json()  # Fetch correct new photo name from response
 
-        # Update user record in memory to reflect changes
-        self.user["email"] = new_email
-        self.user["profile_photo"] = new_photo
+            log_profile_update(
+                user_id=self.user["id"],
+                old_email=self.user["email"],
+                new_email=new_email,
+                old_photo=self.user["profile_photo"],
+                new_photo=updated_user["new_profile_photo"],
+                response=response
+            )
+
+            # Update in-memory data to prevent mismatches in logs
+            self.user["email"] = new_email
+            self.user["profile_photo"] = updated_user["new_profile_photo"]
+        else:
+            print(f"❌ PROFILE UPDATE FAILED: User {self.user['id']} - Status {response.status_code} - {response.text}")
 
 
-# Load data.json **ONCE** before tests start
+# Load data.json once before tests start
+@events.init.add_listener
 def on_locust_init(environment, **kwargs):
     """Load user data once before the test starts"""
     global shared_data
@@ -131,6 +141,3 @@ def on_locust_init(environment, **kwargs):
     if not shared_data or "users" not in shared_data:
         print("ERROR: Invalid data.json content")
         environment.runner.quit()
-
-
-events.init.add_listener(on_locust_init)

@@ -80,28 +80,36 @@ class BookingUser(HttpUser):
         ]
 
         # Ensure at least one field is modified
-        while True:
+        field_to_modify = None
+        for _ in range(len(fields_to_update)):  # Iterate over available fields
             field_to_modify = random.choice(fields_to_update)
-            original_value = updated_booking[field_to_modify]
+            old_value = updated_booking[field_to_modify]
 
             if field_to_modify == "firstname":
-                updated_booking["firstname"] = random.choice(["Alice", "Bob", "Charlie", "David"])
+                updated_value = random.choice(["Alice", "Bob", "Charlie", "David"])
             elif field_to_modify == "lastname":
-                updated_booking["lastname"] = random.choice(["Johnson", "Williams", "Brown", "Davis"])
+                updated_value = random.choice(["Johnson", "Williams", "Brown", "Davis"])
             elif field_to_modify == "totalprice":
-                updated_booking["totalprice"] = random.randint(100, 1000)
+                updated_value = random.randint(100, 1000)
             elif field_to_modify == "depositpaid":
-                updated_booking["depositpaid"] = not updated_booking["depositpaid"]
+                updated_value = not updated_booking["depositpaid"]
             elif field_to_modify == "checkin":
-                updated_booking["checkin"] = f"2025-01-{random.randint(1, 28):02d}"
+                updated_value = f"2025-01-{random.randint(1, 28):02d}"
             elif field_to_modify == "checkout":
-                updated_booking["checkout"] = f"2025-02-{random.randint(1, 28):02d}"
+                updated_value = f"2025-02-{random.randint(1, 28):02d}"
             elif field_to_modify == "additionalneeds":
-                updated_booking["additionalneeds"] = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
+                updated_value = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
+            else:
+                continue  # Skip if the field is unknown
 
-            # Break loop if the value has changed
-            if updated_booking[field_to_modify] != original_value:
-                break
+            # Ensure the value actually changes
+            if updated_value != old_value:
+                updated_booking[field_to_modify] = updated_value
+                break  # Stop when we have successfully modified a field
+
+        if field_to_modify is None:
+            print(f"⚠️ WARNING: No change detected for booking {self.booking['id']}")
+            return  # Skip if somehow no update is possible
 
         response = self.client.put(
             f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",

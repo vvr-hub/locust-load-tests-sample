@@ -1,20 +1,34 @@
 import json
 import os
+from threading import Lock
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../mock_api/data.json")
+data_lock = Lock()
+shared_data = None
+
 
 def load_data():
-    """Load and validate data.json before using it in tests."""
-    if not os.path.exists(DATA_FILE):
-        raise RuntimeError("❌ ERROR: data.json file is missing!")
+    """Load user and booking data from JSON once."""
+    global shared_data
+    if shared_data is None:
+        with data_lock:
+            if shared_data is None:
+                try:
+                    with open(DATA_FILE, "r") as f:
+                        shared_data = json.load(f)
+                except (json.JSONDecodeError, FileNotFoundError) as e:
+                    print(f"ERROR: Failed to load data.json - {e}")
+                    return None
+    return shared_data
 
-    try:
-        with open(DATA_FILE, "r") as f:
-            data = json.load(f)
-    except json.JSONDecodeError:
-        raise RuntimeError("❌ ERROR: data.json contains invalid JSON!")
 
-    if "users" not in data or "bookings" not in data:
-        raise RuntimeError("❌ ERROR: data.json is missing 'users' or 'bookings' sections!")
+def get_users():
+    """Fetch users from loaded data."""
+    data = load_data()
+    return data.get("users", []) if data else []
 
-    return data
+
+def get_bookings():
+    """Fetch bookings from loaded data."""
+    data = load_data()
+    return data.get("bookings", []) if data else []

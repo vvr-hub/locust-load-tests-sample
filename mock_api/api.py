@@ -1,11 +1,15 @@
 from fastapi import FastAPI, HTTPException, Body, Request, UploadFile, File
 import json
 import os
+import threading
 
 app = FastAPI()
 
 # Define the path for the data file
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
+
+# Thread lock to handle concurrent updates safely
+data_lock = threading.Lock()
 
 
 # Load data function
@@ -44,7 +48,7 @@ async def authenticate_user(request: Request, username: str = Body(...), passwor
 
 @app.put("/update-profile/{user_id}")
 async def update_profile(user_id: int, email: str = Body(...), profile_photo: UploadFile = File(...)):
-    """Update user email and process profile picture (discarded)"""
+    """Update user email and profile photo but discard the uploaded image"""
     data = load_data()
 
     # Find the user by ID
@@ -53,28 +57,26 @@ async def update_profile(user_id: int, email: str = Body(...), profile_photo: Up
             old_email = user["email"]
             old_photo = user.get("profile_photo", "None")
 
-            # Process the uploaded photo (discard after reading)
-            file_size = 0
-            while chunk := await profile_photo.read(1024):  # Read in chunks
-                file_size += len(chunk)  # Keep track of file size
-            profile_photo.file.close()  # Close the file after reading
+            # Read and discard the uploaded photo to simulate load
+            await profile_photo.read()
 
             # Update user data
-            user["email"] = email
-            user["profile_photo"] = profile_photo.filename  # Store only the filename for logging
-            save_data(data)
+            new_photo = profile_photo.filename
+            with data_lock:  # Ensure safe concurrent updates
+                user["email"] = email
+                user["profile_photo"] = new_photo
+                save_data(data)
 
+            # Logging the update
             print(f"📸 PROFILE UPDATED: ID {user_id}")
             print(f"   OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
-            print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {profile_photo.filename}")
-            print(f"   📂 PHOTO UPLOADED (& PROCESSED): {profile_photo.filename}, Size: {file_size} bytes")
+            print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
 
             return {
                 "message": "Profile updated successfully",
                 "user_id": user_id,
                 "new_email": email,
-                "new_profile_photo": profile_photo.filename,
-                "photo_size_bytes": file_size
+                "new_profile_photo": new_photo
             }
 
     print(f"❌ ERROR: User ID {user_id} not found")
@@ -98,16 +100,17 @@ async def update_booking(
         if booking["id"] == booking_id:
             old_booking = booking.copy()
 
-            booking.update({
-                "firstname": firstname,
-                "lastname": lastname,
-                "totalprice": totalprice,
-                "depositpaid": depositpaid,
-                "checkin": checkin,
-                "checkout": checkout,
-                "additionalneeds": additionalneeds
-            })
-            save_data(data)
+            with data_lock:
+                booking.update({
+                    "firstname": firstname,
+                    "lastname": lastname,
+                    "totalprice": totalprice,
+                    "depositpaid": depositpaid,
+                    "checkin": checkin,
+                    "checkout": checkout,
+                    "additionalneeds": additionalneeds
+                })
+                save_data(data)
 
             print(f"✏️ BOOKING UPDATED: ID {booking_id}")
             print(f"   OLD DATA: {old_booking}")
@@ -138,8 +141,9 @@ async def delete_booking(booking_id: int):
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
-            data["bookings"].remove(booking)
-            save_data(data)
+            with data_lock:
+                data["bookings"].remove(booking)
+                save_data(data)
 
             print(f"🗑️ BOOKING DELETED: ID {booking_id}")
             return {"message": "Booking deleted"}
