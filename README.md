@@ -107,7 +107,7 @@ Make sure the Mock API is running before executing any of the following Locust c
 - The **--stop-timeout 5** parameter **allows users** to gracefully stop all active tasks before **shutting down** the test. When you stop the test manually (`Ctrl + C`) or when the test reaches its specified `run-time` limit, Locust will **wait for up to 5 seconds** before forcing users to stop (giving **active requests** time to complete before shut down).
 
 ### 🛠 Load & Performance Test for Uploading Profile Photo (`/update-profile/{user_id}` endpoint)
-Below test is for load testing the endpoint for updating profile photo and email address together using `multipart/form-data`
+Below test is for load testing the endpoint for **updating profile photo & email** together using `multipart/form-data`
 ```sh
 locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
 ```
