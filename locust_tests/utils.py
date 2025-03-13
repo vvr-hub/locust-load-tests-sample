@@ -51,3 +51,13 @@ def log_auth_response(username, response):
         print(f"✅ AUTH SUCCESS: User '{username}' authenticated. Token: {token}")
     else:
         print(f"❌ AUTH FAILURE: {response.status_code} - {response.text}")
+
+
+def log_profile_update(user_id, old_email, new_email, old_photo, new_photo, response):
+    """Log profile update details"""
+    if response.status_code == 200:
+        print(f"📸 PROFILE UPDATED: ID {user_id}")
+        print(f"   OLD EMAIL: {old_email} ➡️ NEW EMAIL: {new_email}")
+        print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
+    else:
+        print(f"❌ PROFILE UPDATE FAILED: ID {user_id} - Status {response.status_code} - {response.text}")
