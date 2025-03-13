@@ -5,7 +5,7 @@ Locust Scalability & Stress Test for Authentication (/auth endpoint)
 - **Purpose:** Measures the ability to handle authentication requests under high load.
 - **Endpoint:** `/auth` (POST)
 - **Concurrent Users:** 500 - 1000
-- **Spawn Rate:** 50/sec
+- **spawn-rate:** 50/sec
 - **Wait Time:** 0 - 1 sec
 - **Duration (run-time):** 10 minutes
 """

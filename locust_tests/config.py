@@ -12,4 +12,5 @@ MOCK_API_BASE_URL = os.getenv("LOCUST_HOST", DEFAULT_MOCK_API_BASE_URL)
 ENDPOINTS = {
     "auth": "/auth",
     "booking": "/booking/{id}",
+    "update_profile": "/update-profile/{id}"
 }

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body, Request
+from fastapi import FastAPI, HTTPException, Body, Request, UploadFile, File
 import json
 import os
 
@@ -30,7 +30,6 @@ async def authenticate_user(request: Request, username: str = Body(...), passwor
     """Mock authentication endpoint with detailed logging"""
     data = load_data()
 
-    # Log the authentication request details
     print(f"🔹 AUTH REQUEST: Username: {username}, Password: {password}")
 
     for user in data["users"]:
@@ -43,36 +42,44 @@ async def authenticate_user(request: Request, username: str = Body(...), passwor
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-@app.post("/booking")
-async def create_booking(
-        firstname: str = Body(...),
-        lastname: str = Body(...),
-        totalprice: int = Body(...),
-        depositpaid: bool = Body(...),
-        checkin: str = Body(...),
-        checkout: str = Body(...),
-        additionalneeds: str = Body(...)
-):
-    """Create a new booking"""
+@app.put("/update-profile/{user_id}")
+async def update_profile(user_id: int, email: str = Body(...), profile_photo: UploadFile = File(...)):
+    """Update user email and process profile picture (discarded)"""
     data = load_data()
-    new_booking_id = max([b["id"] for b in data["bookings"]], default=0) + 1
-    new_booking = {
-        "id": new_booking_id,
-        "firstname": firstname,
-        "lastname": lastname,
-        "totalprice": totalprice,
-        "depositpaid": depositpaid,
-        "checkin": checkin,
-        "checkout": checkout,
-        "additionalneeds": additionalneeds
-    }
-    data["bookings"].append(new_booking)
-    save_data(data)
 
-    # Log booking creation details
-    print(f"📌 NEW BOOKING CREATED: {new_booking}")
+    # Find the user by ID
+    for user in data["users"]:
+        if user["id"] == user_id:
+            old_email = user["email"]
+            old_photo = user.get("profile_photo", "None")
 
-    return {"message": "Booking created", "booking": new_booking}
+            # Process the uploaded photo (discard after reading)
+            file_size = 0
+            while chunk := await profile_photo.read(1024):  # Read in chunks
+                file_size += len(chunk)  # Keep track of file size
+            profile_photo.file.close()  # Close the file after reading
+
+            # Update user data
+            user["email"] = email
+            user["profile_photo"] = profile_photo.filename  # Store only the filename for logging
+            save_data(data)
+
+            # Logging the update
+            print(f"📸 PROFILE UPDATED: ID {user_id}")
+            print(f"   OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
+            print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {profile_photo.filename}")
+            print(f"   📂 PHOTO UPLOADED (& PROCESSED): {profile_photo.filename}, Size: {file_size} bytes")
+
+            return {
+                "message": "Profile updated successfully",
+                "user_id": user_id,
+                "new_email": email,
+                "new_profile_photo": profile_photo.filename,
+                "photo_size_bytes": file_size
+            }
+
+    print(f"❌ ERROR: User ID {user_id} not found")
+    raise HTTPException(status_code=404, detail="User not found")
 
 
 @app.put("/booking/{booking_id}")
@@ -90,7 +97,8 @@ async def update_booking(
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
-            old_booking = booking.copy()  # Store the old data for comparison
+            old_booking = booking.copy()
+
             booking.update({
                 "firstname": firstname,
                 "lastname": lastname,
@@ -102,7 +110,6 @@ async def update_booking(
             })
             save_data(data)
 
-            # Log booking update details
             print(f"✏️ BOOKING UPDATED: ID {booking_id}")
             print(f"   OLD DATA: {old_booking}")
             print(f"   NEW DATA: {booking}")
@@ -135,9 +142,7 @@ async def delete_booking(booking_id: int):
             data["bookings"].remove(booking)
             save_data(data)
 
-            # Log booking deletion details
             print(f"🗑️ BOOKING DELETED: ID {booking_id}")
-
             return {"message": "Booking deleted"}
 
     print(f"❌ ERROR: Booking ID {booking_id} not found")

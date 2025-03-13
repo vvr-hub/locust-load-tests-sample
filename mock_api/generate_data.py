@@ -14,13 +14,14 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 
 
 def generate_users(num_users):
-    """Generate unique users"""
+    """Generate unique users with emails"""
     users = []
     for i in range(num_users):
         users.append({
             "id": i + 1,
             "username": f"user{i + 1}",
-            "password": "password" + str(i + 1)  # Simple password pattern
+            "password": "password" + str(i + 1),  # Simple password pattern
+            "email": fake.email()  # Generate unique email for each user
         })
     return users
 
