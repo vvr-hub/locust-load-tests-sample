@@ -13,7 +13,6 @@ Locust Load & Performance Test for Update Booking (/booking/{id} endpoint)
 from locust import HttpUser, task, between, events
 import threading
 import random
-import time
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
 from utils import log_booking_update
@@ -22,8 +21,6 @@ from utils import log_booking_update
 data_lock = threading.Lock()
 shared_data = None  # Stores user and booking data
 global_user_index = -1  # Ensures unique user indexing across all threads
-auth_counter = 0  # Counts authenticated users
-auth_complete_event = threading.Event()  # Event to block update phase until all users are authenticated
 
 
 class BookingUser(HttpUser):
@@ -31,8 +28,8 @@ class BookingUser(HttpUser):
     wait_time = between(1, 3)  # Adds a delay between requests, common for load tests
 
     def on_start(self):
-        """Ensure all users authenticate first before updating bookings"""
-        global global_user_index, shared_data, auth_counter
+        """Load users and bookings from shared memory instead of reading file per user"""
+        global global_user_index, shared_data
 
         if shared_data is None:
             print("ERROR: Shared data is not loaded. Test will stop.")
@@ -43,13 +40,13 @@ class BookingUser(HttpUser):
             global_user_index += 1
             self.user_index = global_user_index  # Assign unique index
 
-            if self.user_index >= len(shared_data["users"]):
-                print(f"ERROR: More users requested ({self.user_index}) than available.")
-                self.environment.runner.quit()
-                return
+        if self.user_index >= len(shared_data["users"]):
+            print(f"ERROR: More users requested ({self.user_index}) than available.")
+            self.environment.runner.quit()
+            return
 
-            self.user = shared_data["users"][self.user_index]
-            self.booking = shared_data["bookings"][self.user_index]
+        self.user = shared_data["users"][self.user_index]
+        self.booking = shared_data["bookings"][self.user_index]
 
         # Authenticate the user
         response = self.client.post(
@@ -59,13 +56,6 @@ class BookingUser(HttpUser):
 
         if response.status_code == 200:
             self.token = response.json().get("token", "")
-
-            with data_lock:
-                auth_counter += 1
-                if auth_counter == len(shared_data["users"]):
-                    print("✅ All users authenticated! Booking updates can begin.")
-                    auth_complete_event.set()  # Allow all users to proceed
-
         else:
             print(f"ERROR: Authentication failed for user {self.user['username']}")
             self.environment.runner.quit()
@@ -73,9 +63,7 @@ class BookingUser(HttpUser):
 
     @task
     def update_booking(self):
-        """Ensure updates only happen after all users authenticate"""
-        auth_complete_event.wait()  # Wait until all users authenticate
-
+        """Update the assigned booking ID with at least one changed field"""
         if not hasattr(self, "token") or not self.token:
             print(f"ERROR: No authentication token available for user {self.user['username']}")
             return

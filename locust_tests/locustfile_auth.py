@@ -24,7 +24,7 @@ global_user_index = -1  # Ensure correct user indexing across all threads
 
 class AuthUser(HttpUser):
     host = MOCK_API_BASE_URL  # Uses default from config, overridden by --host
-    wait_time = between(0, 1)  # Minimal wait time for stress testing
+    wait_time = between(0, 1)  # Delay between requests is minimal for stress testing
 
     def on_start(self):
         """Load users from shared memory instead of reading file per user"""

@@ -64,7 +64,6 @@ async def update_profile(user_id: int, email: str = Body(...), profile_photo: Up
             user["profile_photo"] = profile_photo.filename  # Store only the filename for logging
             save_data(data)
 
-            # Logging the update
             print(f"📸 PROFILE UPDATED: ID {user_id}")
             print(f"   OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
             print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {profile_photo.filename}")
