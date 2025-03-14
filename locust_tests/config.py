@@ -14,3 +14,6 @@ ENDPOINTS = {
     "booking": "/booking/{id}",
     "update_profile": "/update-profile/{id}"
 }
+
+# WebSocket URL
+WEBSOCKET_URL = "ws://localhost:8000/ws"

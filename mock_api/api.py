@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body, Request, UploadFile, File
+from fastapi import FastAPI, HTTPException, Body, Request, UploadFile, File, WebSocket, WebSocketDisconnect
 import json
 import os
 import threading
@@ -150,3 +150,31 @@ async def delete_booking(booking_id: int):
 
     print(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
+
+
+# -----------------------
+# ✅ WebSocket Server
+# -----------------------
+
+active_connections = set()  # Keep track of connected WebSocket clients
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """Mock WebSocket Service"""
+    await websocket.accept()
+    active_connections.add(websocket)
+    print(f"🔗 NEW WEBSOCKET CONNECTION: {len(active_connections)} clients connected")
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(f"📩 MESSAGE RECEIVED: {data}")
+
+            # Echo the message back to the sender
+            response = f"Echo: {data}"
+            await websocket.send_text(response)
+
+    except WebSocketDisconnect:
+        active_connections.remove(websocket)
+        print(f"🔌 CLIENT DISCONNECTED: {len(active_connections)} clients remaining")

@@ -4,3 +4,4 @@ fastapi
 uvicorn
 faker
 python-multipart
+websockets

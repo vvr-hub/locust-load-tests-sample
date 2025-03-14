@@ -2,15 +2,16 @@
 
 ## Overview
 
-This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**. It
-simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking updates.
-
+This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**.
+It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking updates.
+It also provides a Websocket Load Test for real-time communication service.
 Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
 
 ## Features
 
 ✅ **Load & Performance Testing** for profile photo uploads and booking updates  
 ✅ **Scalability & Stress Testing** for user authentication  
+✅ **WebSocket Load Testing** for real-time communication services  
 ✅ **Realistic Think-Time Patterns** for better user simulation  
 ✅ **Chaos Testing** - simulate API failures  
 ✅ **Centralised Configurations** for easy setup  
@@ -60,13 +61,22 @@ pip install -r requirements.txt
 ### **3️⃣ Start the Mock API**
 
 The Mock API serves as the backend for testing.
+It provides authentication, booking updates, user profile photo updates and WebSocket communication.
+
+Run the following command from the project root:
 
 ```sh
-cd mock_api
+uvicorn mock_api.api:app --host 0.0.0.0 --port 8000 --reload
+```
+Alternatively, if you are inside `mock_api/` directory, use:
+```sh
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The API will be available at: http://localhost:8000
+✔️ This will start both the **WebSocket** and other **REST API** endpoints.
+✔️ Both WebSocket (/ws) and other REST API endpoints will be available for load testing.
+🔹 The API will be available at `http://localhost:8000/`  
+🔹 WebSocket server will be available at `ws://localhost:8000/ws`
 
 ### **4️⃣ Generate Sample Data**
 
@@ -98,7 +108,7 @@ Make sure the Mock API is running before executing any of the following Locust c
 | **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
 | **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`|
 
-### 💡 Notes:
+#### 💡 Notes:
 
 - If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
 - If you **explicitly specify `--host`**, the tests will use the provided URL instead.
@@ -111,6 +121,20 @@ Below test is for load testing the endpoint for **updating profile photo & email
 ```sh
 locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
 ```
+
+### 📌 Run WebSocket Load Test
+
+To simulate **500 concurrent WebSocket users** with a **spawn rate of 10 users per second** for **5 minutes,** run:
+
+```sh
+locust -f locustfile_websocket.py --users 500 --spawn-rate 10 --run-time 5m
+```
+
+📌 What Happens?
+- Users connect to the WebSocket server at `ws://localhost:8000/ws`
+- Each user sends a `ping` message and waits for a response.
+- The test simulates real-time messaging under load.
+- Logs show activity.
 
 ### 📌 Chaos Testing
 
@@ -151,6 +175,7 @@ The following best practices have been implemented:
 │ ├── locustfile_auth.py            # Authentication Stress Test
 │ ├── locustfile_update_profile.py  # Profile Photo Upload Load Test
 │ ├── locustfile_update_booking.py  # Booking Update Load Test
+│ ├── locustfile_websocket.py       # WebSocket Load Test
 │ ├── config.py                     # Centralised Base URLs & Endpoints
 │ ├── data_loader.py                # Loads users & bookings for tests
 │ ├── utils.py                      # Common functions for reusability

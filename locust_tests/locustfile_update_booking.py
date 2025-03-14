@@ -12,7 +12,6 @@ Locust Load & Performance Test for Update Booking (/booking/{id} endpoint)
 
 from locust import HttpUser, task, between, events
 import threading
-import random
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
 from utils import log_booking_update, modify_booking
