@@ -15,9 +15,9 @@ import threading
 import random
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
-from utils import log_booking_update
+from utils import log_booking_update, modify_booking
 
-# Global storage for shared data.json content
+# Global variables
 data_lock = threading.Lock()
 shared_data = None  # Stores user and booking data
 global_user_index = -1  # Ensures unique user indexing across all threads
@@ -32,7 +32,7 @@ class BookingUser(HttpUser):
         global global_user_index, shared_data
 
         if shared_data is None:
-            print("ERROR: Shared data is not loaded. Test will stop.")
+            print("❌ ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
@@ -41,7 +41,7 @@ class BookingUser(HttpUser):
             self.user_index = global_user_index  # Assign unique index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"ERROR: More users requested ({self.user_index}) than available.")
+            print(f"❌ ERROR: More users requested ({self.user_index}) than available.")
             self.environment.runner.quit()
             return
 
@@ -57,7 +57,7 @@ class BookingUser(HttpUser):
         if response.status_code == 200:
             self.token = response.json().get("token", "")
         else:
-            print(f"ERROR: Authentication failed for user {self.user['username']}")
+            print(f"❌ ERROR: Authentication failed for user {self.user['username']}")
             self.environment.runner.quit()
             return
 
@@ -65,7 +65,7 @@ class BookingUser(HttpUser):
     def update_booking(self):
         """Update the assigned booking ID with at least one changed field"""
         if not hasattr(self, "token") or not self.token:
-            print(f"ERROR: No authentication token available for user {self.user['username']}")
+            print(f"❌ ERROR: No authentication token available for user {self.user['username']}")
             return
 
         headers = {
@@ -73,62 +73,32 @@ class BookingUser(HttpUser):
             "Content-Type": "application/json"
         }
 
-        # Define the possible changes while keeping the 'id' unchanged
-        updated_booking = self.booking.copy()
-        fields_to_update = [
-            "firstname", "lastname", "totalprice", "depositpaid", "checkin", "checkout", "additionalneeds"
-        ]
-
-        # Ensure at least one field is modified
-        field_to_modify = None
-        for _ in range(len(fields_to_update)):  # Iterate over available fields
-            field_to_modify = random.choice(fields_to_update)
-            old_value = updated_booking[field_to_modify]
-
-            if field_to_modify == "firstname":
-                updated_value = random.choice(["Alice", "Bob", "Charlie", "David"])
-            elif field_to_modify == "lastname":
-                updated_value = random.choice(["Johnson", "Williams", "Brown", "Davis"])
-            elif field_to_modify == "totalprice":
-                updated_value = random.randint(100, 1000)
-            elif field_to_modify == "depositpaid":
-                updated_value = not updated_booking["depositpaid"]
-            elif field_to_modify == "checkin":
-                updated_value = f"2025-01-{random.randint(1, 28):02d}"
-            elif field_to_modify == "checkout":
-                updated_value = f"2025-02-{random.randint(1, 28):02d}"
-            elif field_to_modify == "additionalneeds":
-                updated_value = random.choice(["Breakfast", "Lunch", "Dinner", "None"])
-            else:
-                continue  # Skip if the field is unknown
-
-            # Ensure the value actually changes
-            if updated_value != old_value:
-                updated_booking[field_to_modify] = updated_value
-                break  # Stop when we have successfully modified a field
-
-        if field_to_modify is None:
-            print(f"⚠️ WARNING: No change detected for booking {self.booking['id']}")
-            return  # Skip if somehow no update is possible
+        field_to_modify, new_value = modify_booking(self.booking)
 
         response = self.client.put(
             f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",
             headers=headers,
-            json=updated_booking
+            json=self.booking
         )
 
-        log_booking_update(self.booking["id"], field_to_modify, updated_booking[field_to_modify], response)
+        log_booking_update(self.booking["id"], field_to_modify, new_value, response)
 
 
 # Load data.json **ONCE** before tests start
 def on_locust_init(environment, **kwargs):
     """Load user and booking data once before the test starts"""
     global shared_data
-    shared_data = load_data()
+    try:
+        shared_data = load_data()
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load data.json: {e}")
+        environment.runner.quit()
 
     if not shared_data or "users" not in shared_data or "bookings" not in shared_data:
-        print("ERROR: Invalid data.json content")
+        print("❌ ERROR: Invalid data.json content")
         environment.runner.quit()
+    else:
+        print("✅ Data loaded successfully")
 
 
 events.init.add_listener(on_locust_init)

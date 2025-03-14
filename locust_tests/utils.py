@@ -1,4 +1,5 @@
 import random
+import os
 
 
 def get_random_user(users):
@@ -65,3 +66,27 @@ def log_profile_update(user_id, old_email, new_email, old_photo, new_photo, resp
         print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
     else:
         print(f"❌ PROFILE UPDATE FAILED: ID {user_id} - Status {response.status_code} - {response.text}")
+
+
+def generate_random_email():
+    """Generate a random email address"""
+    domains = ["example.com", "test.com", "sample.org"]
+    name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=7))
+    domain = random.choice(domains)
+    return f"{name}@{domain}"
+
+
+def select_random_photo():
+    """Select a random profile photo from the available options"""
+    photos_dir = os.path.join(os.path.dirname(__file__), "profile_photos")
+
+    if not os.path.exists(photos_dir):
+        raise FileNotFoundError(f"❌ ERROR: Profile photos directory not found at {photos_dir}")
+
+    photos = [f for f in os.listdir(photos_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
+
+    if not photos:
+        raise FileNotFoundError("❌ ERROR: No profile photos found in the directory!")
+
+    selected_photo = random.choice(photos)
+    return os.path.join(photos_dir, selected_photo), selected_photo
