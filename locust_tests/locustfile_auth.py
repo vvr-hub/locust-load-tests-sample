@@ -24,14 +24,14 @@ global_user_index = -1  # Ensure correct user indexing across all threads
 
 class AuthUser(HttpUser):
     host = MOCK_API_BASE_URL  # Uses default from config, overridden by --host
-    wait_time = between(0, 1)  # Delay between requests is minimal for stress testing
+    wait_time = between(0, 1)  # Minimal delay between requests for stress testing
 
     def on_start(self):
         """Load users from shared memory instead of reading file per user"""
         global global_user_index, shared_data
 
         if shared_data is None:
-            print("ERROR: Shared data is not loaded. Test will stop.")
+            print("❌ ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
@@ -40,7 +40,7 @@ class AuthUser(HttpUser):
             self.user_index = global_user_index  # Assign unique index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"ERROR: More users requested ({self.user_index}) than available")
+            print(f"❌ ERROR: More users requested ({self.user_index}) than available")
             self.environment.runner.quit()
             return
 
@@ -61,11 +61,17 @@ class AuthUser(HttpUser):
 def on_locust_init(environment, **kwargs):
     """Load user data once before the test starts"""
     global shared_data
-    shared_data = load_data()
+    try:
+        shared_data = load_data()
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load data.json: {e}")
+        environment.runner.quit()
 
     if not shared_data or "users" not in shared_data:
-        print("ERROR: Invalid data.json content")
+        print("❌ ERROR: Invalid data.json content")
         environment.runner.quit()
+    else:
+        print("✅ Data loaded successfully")
 
 
 events.init.add_listener(on_locust_init)
