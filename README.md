@@ -31,8 +31,8 @@ Before installing dependencies, create and activate a **Python virtual environme
    pipenv install
    pipenv shell
    
-python3 -m venv .venv
-source .venv/bin/activate
+   python3 -m venv .venv
+   source .venv/bin/activate
    ```
 
 To make the virtual environment auto-activate in zsh, add the following to your ~/.zshrc file:
@@ -68,7 +68,9 @@ Run the following command from the project root:
 ```sh
 uvicorn mock_api.api:app --host 0.0.0.0 --port 8000 --reload
 ```
+
 Alternatively, if you are inside `mock_api/` directory, use:
+
 ```sh
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -102,11 +104,11 @@ Make sure the Mock API is running before executing any of the following Locust c
 
 ### 🔄 Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
 
-| **Test Scenario**                                                                                                            | **Command**                                                                                                                       |
-|------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                              |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`|
+| **Test Scenario**                                                                                                            | **Command**                                                                                                                        |
+|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                               |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`  |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
 
 #### 💡 Notes:
 
@@ -114,10 +116,15 @@ Make sure the Mock API is running before executing any of the following Locust c
 - If you **explicitly specify `--host`**, the tests will use the provided URL instead.
 - Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
 
-- The **--stop-timeout 5** parameter **allows users** to gracefully stop all active tasks before **shutting down** the test. When you stop the test manually (`Ctrl + C`) or when the test reaches its specified `run-time` limit, Locust will **wait for up to 5 seconds** before forcing users to stop (giving **active requests** time to complete before shut down).
+- The **--stop-timeout 5** parameter **allows users** to gracefully stop all active tasks before **shutting down** the
+  test. When you stop the test manually (`Ctrl + C`) or when the test reaches its specified `run-time` limit, Locust
+  will **wait for up to 5 seconds** before forcing users to stop (giving **active requests** time to complete before
+  shut down).
 
 ### 🛠 Load & Performance Test for Uploading Profile Photo (`/update-profile/{user_id}` endpoint)
+
 Below test is for load testing the endpoint for **updating profile photo & email** together using `multipart/form-data`
+
 ```sh
 locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
 ```
@@ -131,6 +138,7 @@ locust -f locustfile_websocket.py --users 500 --spawn-rate 10 --run-time 5m
 ```
 
 📌 What Happens?
+
 - Users connect to the WebSocket server at `ws://localhost:8000/ws`
 - Each user sends a `ping` message and waits for a response.
 - The test simulates real-time messaging under load.
@@ -160,6 +168,7 @@ The following best practices have been implemented:
 - Logging for debugging & monitoring (API logs + Locust stats)
 - Separate test files for different scenarios (user auth, upload profile pic & update booking tests)
 - Configurable Test Environment - Supports running tests against different environments (mock API, staging, etc)
+- Enhanced Error Handling - Robust error handling throughout the test suite.
 - Realistic Think-Time Patterns for better user simulation
 
 ## 🛠 Project Structure
@@ -185,9 +194,9 @@ The following best practices have been implemented:
 │── README.md                       # Project Documentation
 ```
 
-**NOTE:** The data.json file acts as a simple database for the Mock API.providing a static data source.
+**NOTE:** The data.json file acts as a simple database for the Mock API providing a static data source.
 The mock_api/api.py reads and writes data from data.json.
-Since the data is stored in a file, it remains the same across test runs unless manually changed.
+
 
 ## 📊 Viewing Locust Reports
 

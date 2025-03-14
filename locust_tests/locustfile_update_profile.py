@@ -15,6 +15,9 @@ import threading
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
 from utils import log_profile_update, generate_random_email, select_random_photo
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Global variables
 data_lock = threading.Lock()
@@ -31,7 +34,7 @@ class UpdateProfileUser(HttpUser):
         global global_user_index, shared_data
 
         if shared_data is None:
-            print("❌ ERROR: Shared data is not loaded. Test will stop.")
+            logging.error("❌ ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
@@ -40,7 +43,7 @@ class UpdateProfileUser(HttpUser):
             self.user_index = global_user_index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"❌ ERROR: More users requested ({self.user_index}) than available.")
+            logging.error(f"❌ ERROR: More users requested ({self.user_index}) than available.")
             self.environment.runner.quit()
             return
 
@@ -55,7 +58,7 @@ class UpdateProfileUser(HttpUser):
         if response.status_code == 200:
             self.token = response.json().get("token", "")
         else:
-            print(f"❌ AUTHENTICATION FAILED: User '{self.user['username']}' - Status {response.status_code}")
+            logging.error(f"❌ AUTHENTICATION FAILED: User '{self.user['username']}' - Status {response.status_code}")
             self.environment.runner.quit()
             return
 
@@ -63,7 +66,7 @@ class UpdateProfileUser(HttpUser):
     def update_profile(self):
         """Update user profile with a new email and profile photo"""
         if not hasattr(self, "token") or not self.token:
-            print(f"❌ ERROR: No authentication token available for user {self.user['username']}")
+            logging.error(f"❌ ERROR: No authentication token available for user {self.user['username']}")
             return
 
         headers = {
@@ -81,7 +84,7 @@ class UpdateProfileUser(HttpUser):
                 if photo_name != old_photo:
                     break  # Successfully found a different photo
             except FileNotFoundError as e:
-                print(f"❌ ERROR: {e}")
+                logging.error(f"❌ ERROR: {e}")
                 return
             attempts += 1
 
@@ -117,14 +120,14 @@ def on_locust_init(environment, **kwargs):
     try:
         shared_data = load_data()
     except Exception as e:
-        print(f"❌ ERROR: Failed to load data.json: {e}")
+        logging.error(f"❌ ERROR: Failed to load data.json: {e}")
         environment.runner.quit()
 
     if not shared_data or "users" not in shared_data:
-        print("❌ ERROR: Invalid data.json content")
+        logging.error("❌ ERROR: Invalid data.json content")
         environment.runner.quit()
     else:
-        print("✅ Data loaded successfully")
+        logging.info("✅ Data loaded successfully")
 
 
 events.init.add_listener(on_locust_init)

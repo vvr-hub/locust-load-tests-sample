@@ -15,6 +15,9 @@ import threading
 from config import MOCK_API_BASE_URL, ENDPOINTS
 from data_loader import load_data
 from utils import log_auth_response
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Global storage for shared data.json content
 data_lock = threading.Lock()
@@ -31,7 +34,7 @@ class AuthUser(HttpUser):
         global global_user_index, shared_data
 
         if shared_data is None:
-            print("❌ ERROR: Shared data is not loaded. Test will stop.")
+            logging.error("❌ ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
@@ -40,7 +43,7 @@ class AuthUser(HttpUser):
             self.user_index = global_user_index  # Assign unique index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"❌ ERROR: More users requested ({self.user_index}) than available")
+            logging.error(f"❌ ERROR: More users requested ({self.user_index}) than available")
             self.environment.runner.quit()
             return
 
@@ -64,14 +67,14 @@ def on_locust_init(environment, **kwargs):
     try:
         shared_data = load_data()
     except Exception as e:
-        print(f"❌ ERROR: Failed to load data.json: {e}")
+        logging.error(f"❌ ERROR: Failed to load data.json: {e}")
         environment.runner.quit()
 
     if not shared_data or "users" not in shared_data:
-        print("❌ ERROR: Invalid data.json content")
+        logging.error("❌ ERROR: Invalid data.json content")
         environment.runner.quit()
     else:
-        print("✅ Data loaded successfully")
+        logging.info("✅ Data loaded successfully")
 
 
 events.init.add_listener(on_locust_init)

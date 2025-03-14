@@ -1,8 +1,8 @@
 import json
 import os
 from threading import Lock
+from config import DATA_FILE
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), "../mock_api/data.json")
 data_lock = Lock()
 shared_data = None
 
@@ -14,7 +14,7 @@ def load_data():
         with data_lock:
             if shared_data is None:
                 try:
-                    with open(DATA_FILE, "r") as f:
+                    with open(os.path.join(os.path.dirname(__file__), DATA_FILE), "r") as f:
                         shared_data = json.load(f)
                 except (json.JSONDecodeError, FileNotFoundError) as e:
                     print(f"ERROR: Failed to load data.json - {e}")

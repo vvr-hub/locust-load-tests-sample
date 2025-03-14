@@ -17,6 +17,9 @@ import json
 import time
 from config import WEBSOCKET_URL
 from data_loader import load_data
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Global Data Storage
 data_lock = threading.Lock()
@@ -32,7 +35,7 @@ class WebSocketUser(User):
         global global_user_index, shared_data
 
         if shared_data is None:
-            print("❌ ERROR: Shared data is not loaded. Test will stop.")
+            logging.error("❌ ERROR: Shared data is not loaded. Test will stop.")
             self.environment.runner.quit()
             return
 
@@ -41,7 +44,7 @@ class WebSocketUser(User):
             self.user_index = global_user_index
 
         if self.user_index >= len(shared_data["users"]):
-            print(f"❌ ERROR: More users requested ({self.user_index}) than available.")
+            logging.error(f"❌ ERROR: More users requested ({self.user_index}) than available.")
             self.environment.runner.quit()
             return
 
@@ -50,16 +53,16 @@ class WebSocketUser(User):
 
         try:
             self.ws.connect(WEBSOCKET_URL)
-            print(f"✅ CONNECTED: User {self.user['id']} connected to WebSocket")
+            logging.info(f"✅ CONNECTED: User {self.user['id']} connected to WebSocket")
         except Exception as e:
-            print(f"❌ CONNECTION ERROR: {e}")
+            logging.error(f"❌ CONNECTION ERROR: {e}")
             self.environment.runner.quit()
 
     @task
     def send_receive_message(self):
         """Send and Receive Messages via WebSocket"""
         if not hasattr(self, "ws") or not self.ws.connected:
-            print(f"❌ ERROR: WebSocket not connected for user {self.user['id']}")
+            logging.error(f"❌ ERROR: WebSocket not connected for user {self.user['id']}")
             return
 
         message = json.dumps({"user_id": self.user["id"], "action": "ping"})
@@ -71,7 +74,7 @@ class WebSocketUser(User):
             response_time = round((time.time() - start_time) * 1000)  # Convert seconds to ms
             response_length = len(response)
 
-            print(f"📩 MESSAGE SENT: {message} | RESPONSE: {response}")
+            logging.info(f"📩 MESSAGE SENT: {message} | RESPONSE: {response}")
 
             # Fire Locust request event for WebSocket messages
             self.environment.events.request.fire(
@@ -83,7 +86,7 @@ class WebSocketUser(User):
             )
 
         except Exception as e:
-            print(f"❌ ERROR SENDING MESSAGE: {e}")
+            logging.error(f"❌ ERROR SENDING MESSAGE: {e}")
             self.environment.events.request.fire(
                 request_type="WebSocket",
                 name="send_message",
@@ -96,7 +99,7 @@ class WebSocketUser(User):
         """Close WebSocket Connection"""
         if hasattr(self, "ws") and self.ws.connected:
             self.ws.close()
-            print(f"🔌 DISCONNECTED: User {self.user['id']} closed WebSocket connection")
+            logging.info(f"🔌 DISCONNECTED: User {self.user['id']} closed WebSocket connection")
 
 
 # Load Data.json **Once** Before Tests Start
@@ -106,14 +109,14 @@ def on_locust_init(environment, **kwargs):
     try:
         shared_data = load_data()
     except Exception as e:
-        print(f"❌ ERROR: Failed to load data.json: {e}")
+        logging.error(f"❌ ERROR: Failed to load data.json: {e}")
         environment.runner.quit()
 
     if not shared_data or "users" not in shared_data:
-        print("❌ ERROR: Invalid data.json content")
+        logging.error("❌ ERROR: Invalid data.json content")
         environment.runner.quit()
     else:
-        print("✅ Data loaded successfully")
+        logging.info("✅ Data loaded successfully")
 
 
 events.init.add_listener(on_locust_init)
