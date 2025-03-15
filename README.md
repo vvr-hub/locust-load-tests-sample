@@ -244,7 +244,7 @@ The mock_api/api.py reads and writes data from data.json.
 | **Min (ms) / Max (ms)**       | Fastest & slowest responses |
 
 
-## 🛠 Why I Chose a Mock API Instead of a Public API**
+## 🛠 Why I Chose a Mock API Instead of a Public API
 
 We considered using a **public API**, but opted for a **custom Mock API** due to the following reasons:
 
