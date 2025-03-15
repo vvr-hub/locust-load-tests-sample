@@ -3,6 +3,14 @@ import json
 import os
 import threading
 from typing import Dict
+import tempfile
+import shutil
+import uuid
+import atexit
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
@@ -14,6 +22,10 @@ data_lock = threading.Lock()
 
 # In-memory cache
 booking_cache: Dict[int, dict] = {}
+
+# Temporary upload directory
+temp_upload_dir = tempfile.mkdtemp(prefix="upload_")
+logging.info(f"Temporary upload directory: {temp_upload_dir}")
 
 
 # Load data function
@@ -38,52 +50,66 @@ async def authenticate_user(request: Request, username: str = Body(...), passwor
     """Mock authentication endpoint with detailed logging"""
     data = load_data()
 
-    print(f"🔹 AUTH REQUEST: Username: {username}, Password: {password}")
+    logging.info(f"🔹 AUTH REQUEST: Username: {username}, Password: {password}")
 
     for user in data["users"]:
         if user["username"] == username and user["password"] == password:
             token = f"fake-token-{username}"
-            print(f"✅ AUTH SUCCESS: User '{username}' authenticated. Token: {token}")
+            logging.info(f"✅ AUTH SUCCESS: User '{username}' authenticated. Token: {token}")
             return {"token": token}
 
-    print(f"❌ AUTH FAILURE: Invalid credentials for user '{username}'")
+    logging.error(f"❌ AUTH FAILURE: Invalid credentials for user '{username}'")
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 @app.put("/update-profile/{user_id}")
 async def update_profile(user_id: int, email: str = Body(...), profile_photo: UploadFile = File(...)):
-    """Update user email and profile photo but discard the uploaded image"""
+    """Update user email and profile photo, saving to temp dir."""
     data = load_data()
 
-    # Find the user by ID
     for user in data["users"]:
         if user["id"] == user_id:
             old_email = user["email"]
             old_photo = user.get("profile_photo", "None")
 
-            # Read and discard the uploaded photo to simulate load
-            await profile_photo.read()
+            try:
+                if not os.path.exists(temp_upload_dir):
+                    logging.error(f"Temporary directory does not exist: {temp_upload_dir}")
+                    raise HTTPException(status_code=500, detail="Temporary directory not found")
 
-            # Update user data
-            new_photo = profile_photo.filename
-            with data_lock:  # Ensure safe concurrent updates
-                user["email"] = email
-                user["profile_photo"] = new_photo
-                save_data(data)
+                file_extension = os.path.splitext(profile_photo.filename)[1]
+                unique_filename = f"{uuid.uuid4()}{file_extension}"
+                file_path = os.path.join(temp_upload_dir, unique_filename)
 
-            # Logging the update
-            print(f"📸 PROFILE UPDATED: ID {user_id}")
-            print(f" OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
-            print(f" OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
+                with open(file_path, "wb") as f:
+                    while contents := await profile_photo.read(1024):
+                        f.write(contents)
 
-            return {
-                "message": "Profile updated successfully",
-                "user_id": user_id,
-                "new_email": email,
-                "new_profile_photo": new_photo
-            }
+                with data_lock:
+                    user["email"] = email
+                    user["profile_photo"] = unique_filename  # Store filename
+                    save_data(data)
 
-    print(f"❌ ERROR: User ID {user_id} not found")
+                logging.info(f"📸 PROFILE UPDATED: ID {user_id}")
+                logging.info(f" OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
+                logging.info(f" OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {unique_filename}")
+                logging.info(f"File saved to: {file_path}")
+
+                return {
+                    "message": "Profile updated successfully",
+                    "user_id": user_id,
+                    "new_email": email,
+                    "new_profile_photo": unique_filename
+                }
+
+            except FileNotFoundError as e:
+                logging.error(f"File not found error: {e}")
+                raise HTTPException(status_code=500, detail="File not found")
+            except Exception as e:
+                logging.error(f"Error saving file: {e}")
+                raise HTTPException(status_code=500, detail="Internal server error")
+
+    logging.error(f"❌ ERROR: User ID {user_id} not found")
     raise HTTPException(status_code=404, detail="User not found")
 
 
@@ -118,13 +144,13 @@ async def update_booking(
                 # clear cache when booking is updated.
                 booking_cache.pop(booking_id, None)
 
-            print(f"✏️ BOOKING UPDATED: ID {booking_id}")
-            print(f" OLD DATA: {old_booking}")
-            print(f" NEW DATA: {booking}")
+            logging.info(f"✏️ BOOKING UPDATED: ID {booking_id}")
+            logging.info(f" OLD DATA: {old_booking}")
+            logging.info(f" NEW DATA: {booking}")
 
             return {"message": "Booking updated"}
 
-    print(f"❌ ERROR: Booking ID {booking_id} not found")
+    logging.error(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
 
 
@@ -132,17 +158,17 @@ async def update_booking(
 async def get_booking(booking_id: int):
     """Retrieve a specific booking by ID with caching"""
     if booking_id in booking_cache:
-        print(f"📄 FETCH BOOKING FROM CACHE: {booking_cache[booking_id]}")
+        logging.info(f"📄 FETCH BOOKING FROM CACHE: {booking_cache[booking_id]}")
         return booking_cache[booking_id]
 
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
             booking_cache[booking_id] = booking
-            print(f"📄 FETCH BOOKING: {booking}")
+            logging.info(f"📄 FETCH BOOKING: {booking}")
             return booking
 
-    print(f"❌ ERROR: Booking ID {booking_id} not found")
+    logging.error(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
 
 
@@ -158,10 +184,10 @@ async def delete_booking(booking_id: int):
                 # clear cache when booking is deleted.
                 booking_cache.pop(booking_id, None)
 
-            print(f"🗑️ BOOKING DELETED: ID {booking_id}")
+            logging.info(f"🗑️ BOOKING DELETED: ID {booking_id}")
             return {"message": "Booking deleted"}
 
-    print(f"❌ ERROR: Booking ID {booking_id} not found")
+    logging.error(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
 
 
@@ -169,7 +195,7 @@ async def delete_booking(booking_id: int):
 async def clear_cache():
     """Clear the booking cache."""
     booking_cache.clear()
-    print("🗑️ BOOKING CACHE CLEARED")
+    logging.info("🗑️ BOOKING CACHE CLEARED")
     return {"message": "Booking cache cleared"}
 
 
@@ -185,12 +211,12 @@ async def websocket_endpoint(websocket: WebSocket):
     """Mock WebSocket Service"""
     await websocket.accept()
     active_connections.add(websocket)
-    print(f"🔗 NEW WEBSOCKET CONNECTION: {len(active_connections)} clients connected")
+    logging.info(f"🔗 NEW WEBSOCKET CONNECTION: {len(active_connections)} clients connected")
 
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"📩 MESSAGE RECEIVED: {data}")
+            logging.info(f"📩 MESSAGE RECEIVED: {data}")
 
             # Echo the message back to the sender
             response = f"Echo: {data}"
@@ -198,4 +224,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         active_connections.remove(websocket)
-        print(f"🔌 CLIENT DISCONNECTED: {len(active_connections)} clients remaining")
+        logging.info(f"🔌 CLIENT DISCONNECTED: {len(active_connections)} clients remaining")
+
+
+# Cleanup function
+def cleanup_temp_dir():
+    try:
+        if os.path.exists(temp_upload_dir):
+            shutil.rmtree(temp_upload_dir)
+            logging.info(f"🧹 Temporary upload directory '{temp_upload_dir}' cleaned up.")
+    except Exception as e:
+        logging.error(f"⚠️ Error cleaning up temporary directory: {e}")

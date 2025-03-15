@@ -254,13 +254,15 @@ The following best practices have been implemented:
 │ ├── data.json         # Stores generated test users & bookings for the tests
 │ 
 ├── 📂 locust_tests/
-│ ├── locustfile_auth.py            # Authentication Stress Test
-│ ├── locustfile_update_profile.py  # Profile Photo Upload Load Test
-│ ├── locustfile_update_booking.py  # Booking Update Load Test
-│ ├── locustfile_websocket.py       # WebSocket Load Test
-│ ├── config.py                     # Centralised Base URLs & Endpoints
-│ ├── data_loader.py                # Loads users & bookings for tests
-│ ├── utils.py                      # Common functions for reusability
+│ ├── locustfile_auth.py                # Authentication Stress Test
+│ ├── locustfile_update_profile.py      # Profile Photo Upload Load Test
+│ ├── locustfile_update_booking.py      # Booking Update Load Test
+│ ├── locustfile_booking_cache.py       # Load Test for Booking Retrieval with Caching
+│ ├── locustfile_booking_cache_reset.py # Test for Booking Retrieval with Cache Reset
+│ ├── locustfile_websocket.py           # WebSocket Load Test
+│ ├── config.py                         # Centralised Base URLs & Endpoints
+│ ├── data_loader.py                    # Loads users & bookings for tests
+│ ├── utils.py                          # Common functions for reusability
 │ ├── 📂 profile_photos/
 │ 
 │── requirements.txt                # Dependencies
