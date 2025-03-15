@@ -1,0 +1,125 @@
+"""
+Locust Load Test for Booking Retrieval with Cache Reset (/booking/{id} endpoint)
+--------------------------------------------------------------------------------
+- **Test Type:** Load Test to Evaluate Cache Reset Functionality and Performance
+- **Purpose:** Simulates users retrieving a booking, resetting the cache, and retrieving the booking again to measure the impact.
+- **Endpoint:** `/booking/{id}` (GET) and `/clear-booking-cache` (POST)
+- **Caching:** Assumes the API uses in-memory caching for booking retrieval.
+- **Cache Reset:** Tests the `/clear-booking-cache` endpoint.
+- **Concurrent Users:** [200 - 500]
+- **spawn-rate:** [10/sec]
+- **Wait Time:** 1 - 3 sec
+- **Duration (run-time):** [3 - 5 minutes]
+"""
+
+from locust import HttpUser, task, between, events
+import threading
+from config import MOCK_API_BASE_URL, ENDPOINTS
+from data_loader import load_data
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
+data_lock = threading.Lock()
+shared_data = None
+global_user_index = -1
+
+
+class BookingCacheResetUser(HttpUser):
+    host = MOCK_API_BASE_URL
+    wait_time = between(1, 3)
+
+    def on_start(self):
+        global global_user_index, shared_data
+        if shared_data is None:
+            logging.error("❌ ERROR: Shared data is not loaded. Test will stop.")
+            self.environment.runner.quit()
+            return
+
+        with data_lock:
+            global_user_index += 1
+            self.user_index = global_user_index
+
+        if self.user_index >= len(shared_data["users"]):
+            logging.error(f"❌ ERROR: More users requested ({self.user_index}) than available.")
+            self.environment.runner.quit()
+            return
+
+        self.user = shared_data["users"][self.user_index]
+        self.booking = shared_data["bookings"][self.user_index]
+
+        response = self.client.post(
+            f"{self.environment.host}{ENDPOINTS['auth']}",
+            json={"username": self.user["username"], "password": self.user["password"]},
+        )
+
+        if response.status_code == 200:
+            self.token = response.json().get("token", "")
+        else:
+            logging.error(f"❌ ERROR: Authentication failed for user {self.user['username']}")
+            self.environment.runner.quit()
+            return
+
+    @task
+    def get_booking_with_reset(self):
+        if not hasattr(self, "token") or not self.token:
+            logging.error(f"❌ ERROR: No authentication token available for user {self.user['username']}")
+            return
+
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
+
+        # First get booking
+        response1 = self.client.get(
+            f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",
+            headers=headers
+        )
+
+        if response1.status_code == 200:
+            logging.info(f"✅ Booking fetched successfully (before reset): {self.booking['id']}")
+        else:
+            logging.error(f"❌ ERROR fetching booking (before reset): {response1.status_code}")
+            return
+
+        # Reset cache
+        response_reset = self.client.post(
+            f"{self.environment.host}/clear-booking-cache",
+            headers=headers
+        )
+
+        if response_reset.status_code == 200:
+            logging.info("✅ Booking cache reset successfully.")
+        else:
+            logging.error(f"❌ ERROR resetting booking cache: {response_reset.status_code}")
+            return
+
+        # Get booking again (should be slower)
+        response2 = self.client.get(
+            f"{self.environment.host}{ENDPOINTS['booking'].format(id=self.booking['id'])}",
+            headers=headers
+        )
+
+        if response2.status_code == 200:
+            logging.info(f"✅ Booking fetched successfully (after reset): {self.booking['id']}")
+        else:
+            logging.error(f"❌ ERROR fetching booking (after reset): {response2.status_code}")
+
+
+# Load data.json **ONCE** before tests start
+def on_locust_init(environment, **kwargs):
+    global shared_data
+    try:
+        shared_data = load_data()
+    except Exception as e:
+        logging.error(f"❌ ERROR: Failed to load data.json: {e}")
+        environment.runner.quit()
+
+    if not shared_data or "users" not in shared_data or "bookings" not in shared_data:
+        logging.error("❌ ERROR: Invalid data.json content")
+        environment.runner.quit()
+    else:
+        logging.info("✅ Data loaded successfully")
+
+
+events.init.add_listener(on_locust_init)

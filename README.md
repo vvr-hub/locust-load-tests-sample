@@ -3,8 +3,10 @@
 ## Overview
 
 This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**.  
-It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking updates.  
+It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking
+updates.  
 It also provides a Websocket Load Test for real-time communication service.  
+This project includes tests for **evaluating cache performance and reset functionality**.  
 Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
 
 ## Features
@@ -17,17 +19,33 @@ Please note that this is **WORK IN PROGRESS** and has got scope for improvements
 ✅ **Centralised Configurations** for easy setup  
 ✅ **Configurable Test Environment** - Easily switch between different environments (Example: local mock API, staging,
 demo)  
+✅ **Caching and Cache Reset** Performance Tests for booking retrievals  
 ✅ **Best Practices Implemented** (see list below)
 
 ---
 
-### 🔧Recommended IDE
+### API Endpoints Tested
 
-For optimal coding experience with this project, I recommend using **PyCharm Community Edition**.
+- `/auth` (POST): User authentication.
+- `/update-profile/{id}` (PUT): Update user profile (email and photo).
+- `/booking/{id}` (PUT): Update an existing booking.
+- `/booking/{id}` (GET): Retrieve a specific booking by ID (with in-memory caching).
+- `/booking/{id}` (DELETE): Delete a booking by ID.
+- `/ws` (WebSocket): WebSocket communication.
+- `/clear-booking-cache` (POST): Clear the booking cache.
+
+#### 💡 Note:
+
+The `/booking/{id}` endpoint uses a simple in-memory cache for demonstration purposes. In a production environment, a
+more robust caching solution like Redis or Memcached would be recommended.
 
 ---
 
 ## 🚀 **Setup Instructions**
+
+### 🔧 **Recommended IDE**
+
+For optimal coding experience with this project, I recommend using **PyCharm Community Edition**.
 
 ### **1️⃣ Create and Activate Virtual Environment**
 
@@ -93,11 +111,14 @@ Before running tests, ensure that `data.json` is populated with the required use
 ```sh
 python mock_api/generate_data.py
 ```
+
 This will generate:
+
 - 1000 Users
 - 500 Bookings
 
 **Customising Data Generation** - You can modify the number of users/bookings via environment variables:
+
 ```sh
 cd mock_api
 NUM_USERS=2000 NUM_BOOKINGS=1000 python generate_data.py
@@ -126,7 +147,6 @@ locust -f locustfile_websocket.py --users 500 --spawn-rate 10 --run-time 5m
 - The test simulates real-time messaging under load.
 - Logs show activity.
 
-
 ### 🏆 TEST2 - Authentication Scalability & Stress Test (`/auth` endpoint)
 
 Simulates multiple users logging in simultaneously
@@ -142,7 +162,6 @@ Below test is for load testing the endpoint for **updating profile photo & email
 ```sh
 locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
 ```
-
 
 ### 🔄 TEST4 - Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
 
@@ -164,21 +183,41 @@ Simulates users modifying their bookings
 
 Locust provides several parameters to fine-tune test execution:
 
-| Parameter              | Description                                                                                                                                                                                    |
-|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`--users <N>`**      | Defines the total number of concurrent users simulated in the test. Example: `--users 500` will simulate **500 users** sending requests.                                                       |
-| **`--spawn-rate <R>`** | Specifies how many new users will be added per second, during the rampup phase. Example: `--spawn-rate 10` means Locust will add **10 users per second** until reaching the target user count. |
-| **`--run-time <T>`**   | Defines the total test duration. Example: `--run-time 5m` runs the test for **5 minutes**.                                                                                                     |
+| Parameter                | Description                                                                                                                                                                                    |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`--users <N>`**        | Defines the total number of concurrent users simulated in the test. Example: `--users 500` will simulate **500 users** sending requests.                                                       |
+| **`--spawn-rate <R>`**   | Specifies how many new users will be added per second, during the rampup phase. Example: `--spawn-rate 10` means Locust will add **10 users per second** until reaching the target user count. |
+| **`--run-time <T>`**     | Defines the total test duration. Example: `--run-time 5m` runs the test for **5 minutes**.                                                                                                     |
 | **`--stop-timeout <S>`** | Allows active requests to complete before stopping the test. Example: `--stop-timeout 5` waits **5 seconds** before forcing users to stop.                                                     |
 
-
 #### 💡 Notes:
+
 - **The `--stop-timeout <S>` parameter** allows users to gracefully stop all active tasks before shutting down the test.
-- When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up to the specified timeout (e.g., `5s`)** before terminating.
+- When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up
+  to the specified timeout (e.g., `5s`)** before terminating.
 - This ensures **active requests** can complete before shut down, improving result accuracy.
 
+### 🔗 TEST5 & TEST6 - Caching Tests
 
-### 🧑‍💻 TEST5 - Chaos Testing
+There are tests to evaluate the API's caching behavior for the `/booking/{id}` endpoint.
+
+- **`locustfile_booking_cache.py`:**
+    - This test simulates users repeatedly retrieving the same booking to assess the impact of caching on performance.
+    - It assumes the API uses in-memory caching.
+    - It measures the latency of subsequent requests to verify caching effectiveness.
+    - Run
+      `locust -f locust_tests/locustfile_booking_cache.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`
+- **`locustfile_booking_cache_reset.py`:**
+    - This test evaluates the cache reset functionality by simulating users retrieving a booking, resetting the cache
+      using the `/clear-booking-cache` endpoint, and then retrieving the booking again.
+    - It measures the latency difference before and after the cache reset to ensure the cache is working as expected.
+    - Run
+      `locust -f locust_tests/locustfile_booking_cache_reset.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`
+
+These tests help to ensure that the API's caching mechanism is functioning correctly and improving performance as
+intended.
+
+### 🧑‍💻 TEST7 - Chaos Testing
 
 To test system **recovery after API failures** with some manual intervention:
 
@@ -231,7 +270,6 @@ The following best practices have been implemented:
 **NOTE:** The data.json file acts as a simple database for the Mock API providing a static data source.
 The mock_api/api.py reads and writes data from data.json.
 
-
 ## 📊 Viewing Locust Reports
 
 - **Web UI:** After running any test, open `http://localhost:8089` in a browser.
@@ -239,16 +277,15 @@ The mock_api/api.py reads and writes data from data.json.
 
 ## 📈 Analyzing Locust Test Results
 
-| **Metric**              | **Meaning** |
-|-------------------------|--|
-| **# Requests**   | Total number of requests sent |
-| **# Fails**         | Failed requests count |
-| **Median (ms)** | Middle response time of all requests |
-| **95%ile (ms)**        | 95th percentile response time |
-| **99%ile (ms)**       | 99th percentile response time |
-| **Average (ms)**       | Average response time |
-| **Min (ms) / Max (ms)**       | Fastest & slowest responses |
-
+| **Metric**              | **Meaning**                          |
+|-------------------------|--------------------------------------|
+| **# Requests**          | Total number of requests sent        |
+| **# Fails**             | Failed requests count                |
+| **Median (ms)**         | Middle response time of all requests |
+| **95%ile (ms)**         | 95th percentile response time        |
+| **99%ile (ms)**         | 99th percentile response time        |
+| **Average (ms)**        | Average response time                |
+| **Min (ms) / Max (ms)** | Fastest & slowest responses          |
 
 ## 🛠 Why I Chose a Mock API Instead of a Public API
 

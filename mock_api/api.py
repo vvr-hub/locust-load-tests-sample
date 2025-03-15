@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Body, Request, UploadFile, File, Web
 import json
 import os
 import threading
+from typing import Dict
 
 app = FastAPI()
 
@@ -10,6 +11,9 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), "data.json")
 
 # Thread lock to handle concurrent updates safely
 data_lock = threading.Lock()
+
+# In-memory cache
+booking_cache: Dict[int, dict] = {}
 
 
 # Load data function
@@ -69,8 +73,8 @@ async def update_profile(user_id: int, email: str = Body(...), profile_photo: Up
 
             # Logging the update
             print(f"📸 PROFILE UPDATED: ID {user_id}")
-            print(f"   OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
-            print(f"   OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
+            print(f" OLD EMAIL: {old_email} ➡️ NEW EMAIL: {email}")
+            print(f" OLD PHOTO: {old_photo} ➡️ NEW PHOTO: {new_photo}")
 
             return {
                 "message": "Profile updated successfully",
@@ -111,10 +115,12 @@ async def update_booking(
                     "additionalneeds": additionalneeds
                 })
                 save_data(data)
+                # clear cache when booking is updated.
+                booking_cache.pop(booking_id, None)
 
             print(f"✏️ BOOKING UPDATED: ID {booking_id}")
-            print(f"   OLD DATA: {old_booking}")
-            print(f"   NEW DATA: {booking}")
+            print(f" OLD DATA: {old_booking}")
+            print(f" NEW DATA: {booking}")
 
             return {"message": "Booking updated"}
 
@@ -124,10 +130,15 @@ async def update_booking(
 
 @app.get("/booking/{booking_id}")
 async def get_booking(booking_id: int):
-    """Retrieve a specific booking by ID"""
+    """Retrieve a specific booking by ID with caching"""
+    if booking_id in booking_cache:
+        print(f"📄 FETCH BOOKING FROM CACHE: {booking_cache[booking_id]}")
+        return booking_cache[booking_id]
+
     data = load_data()
     for booking in data["bookings"]:
         if booking["id"] == booking_id:
+            booking_cache[booking_id] = booking
             print(f"📄 FETCH BOOKING: {booking}")
             return booking
 
@@ -144,12 +155,22 @@ async def delete_booking(booking_id: int):
             with data_lock:
                 data["bookings"].remove(booking)
                 save_data(data)
+                # clear cache when booking is deleted.
+                booking_cache.pop(booking_id, None)
 
             print(f"🗑️ BOOKING DELETED: ID {booking_id}")
             return {"message": "Booking deleted"}
 
     print(f"❌ ERROR: Booking ID {booking_id} not found")
     raise HTTPException(status_code=404, detail="Booking not found")
+
+
+@app.post("/clear-booking-cache")
+async def clear_cache():
+    """Clear the booking cache."""
+    booking_cache.clear()
+    print("🗑️ BOOKING CACHE CLEARED")
+    return {"message": "Booking cache cleared"}
 
 
 # -----------------------
