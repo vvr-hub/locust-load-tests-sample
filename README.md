@@ -21,6 +21,12 @@ demo)
 
 ---
 
+### 🔧Recommended IDE
+
+For optimal coding experience with this project, I recommend using **PyCharm Community Edition**.
+
+---
+
 ## 🚀 **Setup Instructions**
 
 ### **1️⃣ Create and Activate Virtual Environment**
