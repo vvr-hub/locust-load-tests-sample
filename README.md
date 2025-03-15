@@ -2,9 +2,9 @@
 
 ## Overview
 
-This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**.
-It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking updates.
-It also provides a Websocket Load Test for real-time communication service.
+This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**.  
+It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking updates.  
+It also provides a Websocket Load Test for real-time communication service.  
 Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
 
 ## Features
@@ -82,11 +82,22 @@ uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 
 ### **4️⃣ Generate Sample Data**
 
-Before running tests, ensure that data.json is generated with the required users and bookings:
+Before running tests, ensure that `data.json` is populated with the required users and bookings:
 
 ```sh
 python mock_api/generate_data.py
 ```
+This will generate:
+- 1000 Users
+- 500 Bookings
+
+**Customising Data Generation** - You can modify the number of users/bookings via environment variables:
+```sh
+cd mock_api
+NUM_USERS=2000 NUM_BOOKINGS=1000 python generate_data.py
+```
+
+This makes it **configurable** for different test scenarios.
 
 ---
 
@@ -94,42 +105,7 @@ python mock_api/generate_data.py
 
 Make sure the Mock API is running before executing any of the following Locust commands.
 
-### 🏆 Authentication Scalability & Stress Test (`/auth` endpoint)
-
-| **Test Scenario**                                                                                                            | **Command**                                                                                                              |
-|------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_auth.py --users 1000 --spawn-rate 50 --run-time 10m --stop-timeout 5`                              |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_auth.py --host=http://localhost:8000 --users 1000 --spawn-rate 50 --run-time 10m --stop-timeout 5` |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_auth.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 10m --stop-timeout 5` |
-
-### 🔄 Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
-
-| **Test Scenario**                                                                                                            | **Command**                                                                                                                        |
-|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                               |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`  |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
-
-#### 💡 Notes:
-
-- If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
-- If you **explicitly specify `--host`**, the tests will use the provided URL instead.
-- Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
-
-- The **--stop-timeout 5** parameter **allows users** to gracefully stop all active tasks before **shutting down** the
-  test. When you stop the test manually (`Ctrl + C`) or when the test reaches its specified `run-time` limit, Locust
-  will **wait for up to 5 seconds** before forcing users to stop (giving **active requests** time to complete before
-  shut down).
-
-### 🛠 Load & Performance Test for Uploading Profile Photo (`/update-profile/{user_id}` endpoint)
-
-Below test is for load testing the endpoint for **updating profile photo & email** together using `multipart/form-data`
-
-```sh
-locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
-```
-
-### 📌 Run WebSocket Load Test
+### 🔗 TEST1 - Run WebSocket Load Test
 
 To simulate **500 concurrent WebSocket users** with a **spawn rate of 10 users per second** for **5 minutes,** run:
 
@@ -144,7 +120,59 @@ locust -f locustfile_websocket.py --users 500 --spawn-rate 10 --run-time 5m
 - The test simulates real-time messaging under load.
 - Logs show activity.
 
-### 📌 Chaos Testing
+
+### 🏆 TEST2 - Authentication Scalability & Stress Test (`/auth` endpoint)
+
+Simulates multiple users logging in simultaneously
+
+```sh
+locust -f locustfile_auth.py --users 1000 --spawn-rate 50 --run-time 10m --stop-timeout 5
+```
+
+### 🛠 TEST3 - Load & Performance Test for Uploading Profile Photo (`/update-profile/{user_id}` endpoint)
+
+Below test is for load testing the endpoint for **updating profile photo & email** together using `multipart/form-data`
+
+```sh
+locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
+```
+
+
+### 🔄 TEST4 - Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
+
+Simulates users modifying their bookings
+
+| **Test Scenario and Test Environment**                                                                                       | **Command**                                                                                                                        |
+|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                               |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`  |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
+
+#### 💡 Specifying the Test Environment using `host` parameter:
+
+- If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
+- If you **explicitly specify `--host`**, the tests will use the provided URL instead.
+- Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
+
+#### 📌 Other Locust Parameters:
+
+Locust provides several parameters to fine-tune test execution:
+
+| Parameter              | Description                                                                                                                                                                                    |
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`--users <N>`**      | Defines the total number of concurrent users simulated in the test. Example: `--users 500` will simulate **500 users** sending requests.                                                       |
+| **`--spawn-rate <R>`** | Specifies how many new users will be added per second, during the rampup phase. Example: `--spawn-rate 10` means Locust will add **10 users per second** until reaching the target user count. |
+| **`--run-time <T>`**   | Defines the total test duration. Example: `--run-time 5m` runs the test for **5 minutes**.                                                                                                     |
+| **`--stop-timeout <S>`** | Allows active requests to complete before stopping the test. Example: `--stop-timeout 5` waits **5 seconds** before forcing users to stop.                                                     |
+
+
+#### 💡 Notes:
+- **The `--stop-timeout <S>` parameter** allows users to gracefully stop all active tasks before shutting down the test.
+- When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up to the specified timeout (e.g., `5s`)** before terminating.
+- This ensures **active requests** can complete before shut down, improving result accuracy.
+
+
+### 🧑‍💻 TEST5 - Chaos Testing
 
 To test system **recovery after API failures** with some manual intervention:
 
@@ -203,6 +231,19 @@ The mock_api/api.py reads and writes data from data.json.
 - **Web UI:** After running any test, open `http://localhost:8089` in a browser.
 - **Terminal Summary:** After execution, a summary report is displayed.
 
+## 📈 Analyzing Locust Test Results
+
+| **Metric**              | **Meaning** |
+|-------------------------|--|
+| **# Requests**   | Total number of requests sent |
+| **# Fails**         | Failed requests count |
+| **Median (ms)** | Middle response time of all requests |
+| **95%ile (ms)**        | 95th percentile response time |
+| **99%ile (ms)**       | 99th percentile response time |
+| **Average (ms)**       | Average response time |
+| **Min (ms) / Max (ms)**       | Fastest & slowest responses |
+
+
 ## 🛠 Why I Chose a Mock API Instead of a Public API**
 
 We considered using a **public API**, but opted for a **custom Mock API** due to the following reasons:
@@ -230,4 +271,3 @@ performance and chaos testing**.
 
 Created the mock API using the API documentation of the **restful-booker** at:
 https://restful-booker.herokuapp.com/apidoc/index.html
-
