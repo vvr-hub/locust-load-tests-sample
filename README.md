@@ -223,8 +223,6 @@ locust -f locustfile_auth.py --users 1000 --spawn-rate 5 --run-time 2h
 ```
 
 
-
-
 ## 💡 Specifying the Test Environment using `host` parameter:
 
 - If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
@@ -312,6 +310,7 @@ The following best practices have been implemented:
 │ 
 │── requirements.txt                # Dependencies
 │── README.md                       # Project Documentation
+├── 📂 docs/                        # Screenshots of Logs, Reports, Failures, etc.
 ```
 
 **NOTE:** The data.json file acts as a simple database for the Mock API providing a static data source.
@@ -320,9 +319,9 @@ The mock_api/api.py reads and writes data from data.json.
 ## 📊 Viewing Locust Reports
 
 - **Web UI:** After running any test, open `http://localhost:8089` in a browser.
-- **Terminal Summary:** After execution, a summary report is displayed.
+- **Terminal Summary:** After execution and keyboard interrupt, a summary report is displayed.
 
-## 📈 Analyzing Locust Test Results
+## 📂 Analyzing Locust Test Results
 
 | **Metric**              | **Meaning**                          |
 |-------------------------|--------------------------------------|
@@ -334,7 +333,13 @@ The mock_api/api.py reads and writes data from data.json.
 | **Average (ms)**        | Average response time                |
 | **Min (ms) / Max (ms)** | Fastest & slowest responses          |
 
-## 🛠 Why I Chose a Mock API Instead of a Public API
+
+## ✔️ Screenshots of Locust Web UI, Mock Server, Test Logs & Reports
+
+`/locust-load-tests-sample/docs` directory contains **screenshots** of Mock Server Logs, Locust Test Logs, Locust Web UI at **various stages and situations**.
+
+
+## 🛠 Why I chose a Mock API instead of a Public API
 
 We considered using a **public API**, but opted for a **custom Mock API** due to the following reasons:
 
@@ -346,7 +351,7 @@ We considered using a **public API**, but opted for a **custom Mock API** due to
 | **Availability**        | ✅ Always available            | ❌ Downtime possible                 |
 | **Customisation**       | ✅ Can add custom endpoints    | ❌ Limited to predefined endpoints   |
 
-### **Key Benefits of Using a Mock API**
+## **Key Benefits of Using a Mock API**
 
 - **Predictability**: We control the data, ensuring reliable test results.
 - **Scalability**: No external rate limits, allowing stress testing at higher loads.
