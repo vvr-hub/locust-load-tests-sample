@@ -248,7 +248,7 @@ Locust provides several parameters to fine-tune test execution:
 | **`--headless`** | Runs the test **without** starting the Locust web UI. Useful for CI/CD and automated performance tests. **Requires** `--host` param **to be specified**. Example: `--headless --host = http://localhost:8000` |
 | **`--csv <filename>`** | Generates CSV reports containing test results. Example: `--csv=load_test` will create files like `load_test_stats.csv`, etc, storing performance metrics.  |
 
-#### 💡 Notes:
+#### 📋 Notes:
 
 - **The `--stop-timeout <S>` parameter** allows users to gracefully stop all active tasks before shutting down the test.
 - When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up
