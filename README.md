@@ -266,7 +266,8 @@ Locust provides several parameters to fine-tune test execution:
 ```sh
 locust -f locustfile_auth.py --users 500 --spawn-rate 10 --run-time 5m --csv=reports/auth_test
 ```
-This will generate files inside `locust_tests/reports/`:
+The folder **must exist before running the test**. Locust does **not** automatically create the directory.  
+This will generate the below files inside `locust_tests/reports/`:
 ```
 locust_tests/reports/
   ├── auth_test_stats.csv
