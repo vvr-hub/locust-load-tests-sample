@@ -2,24 +2,22 @@
 
 ## Overview
 
-This project is a **Locust-based Load, Performance, Scalability and Stress Testing framework** for a **Mock API**.  
-It simulates real-world API interactions for user authentication, user profile photo upload and (hotel) booking
-updates.  
-It also provides a Websocket Load Test for real-time communication service.  
-This project includes tests for **evaluating cache performance and reset functionality**.  
-Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
+This project is a **Locust-based Load Performance Testing framework** for a **Mock Server** for **Websockets & API** endpoints.  
+It simulates real-time communication service and real-world API interactions for user auth, profile photo upload & (hotel) booking updates.  
+This project includes tests for endurance, recovery (after API failures), and for **evaluating cache performance & reset functionality**.  
+Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.  
 
 ## Features
 
 ✅ **Load & Performance Testing** for profile photo uploads and booking updates  
 ✅ **Scalability & Stress Testing** for user authentication  
-✅ **WebSocket Load Testing** for real-time communication services  
-✅ **Realistic Think-Time Patterns** for better user simulation  
+✅ **WebSocket Load Testing** for real-time communication services
 ✅ **Chaos Testing** - simulate API failures  
 ✅ **Centralised Configurations** for easy setup  
 ✅ **Configurable Test Environment** - Easily switch between different environments (Example: local mock API, staging,
 demo)  
 ✅ **Caching and Cache Reset** Performance Tests for booking retrievals  
+✅ **Realistic Think-Time Patterns** for better user simulation  
 ✅ **Best Practices Implemented** (see list below)
 
 ---
@@ -230,6 +228,21 @@ To test system **recovery after API failures** with some manual intervention:
 6. Note down the number of Failures (`# Fails`) in the Locust 'Statistics'
 7. Observe Locust’s behavior - test how the system handles failures.
 8. There shouldn't be new failures after the API resumption.
+
+
+### 🔹 TEST8 - Endurance (Soak) Tests
+
+**Endurance testing (soak testing)** evaluates how a system behaves under **sustained load over an extended period.**  
+These tests run for hours to simulate real-world, long-term load scenarios.  
+It helps identify memory leaks, performance degradation, slow resource releases or DB connection exhaustion that might only appear after prolonged execution.  
+All existing tests in this project can be run as **endurance tests without modifying the code** simply by adjusting the `--run-time` parameter to a longer duration.  
+
+To perform an **endurance test** on the `/auth` endpoint (for example), run the following command:  
+
+```sh
+locust -f locustfile_auth.py --users 1000 --spawn-rate 5 --run-time 2h
+```
+
 
 ## ✅ Best Practices
 
