@@ -2,23 +2,26 @@
 
 ## Overview
 
-This project is a **Locust-based Load Performance Testing framework** for a **Mock Server** for **Websockets & API** endpoints.  
-It simulates real-time communication service and real-world API interactions for user auth, profile photo upload & (hotel) booking updates.  
-This project includes tests for endurance, recovery (after API failures), and for **evaluating cache performance & reset functionality**.  
-Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.  
+This project is a **Locust-based Load Performance Testing framework** for a **Mock Server** for **Websockets & API**
+endpoints.  
+It simulates real-time communication service and real-world API interactions for user auth, profile photo upload & (
+hotel) booking updates.  
+This project includes tests for endurance, recovery (after API failures), and for **evaluating cache performance & reset
+functionality**.  
+Please note that this is **WORK IN PROGRESS** and has got scope for improvements and expansion.
 
 ## Features
 
 ✅ **Load & Performance Testing** for profile photo uploads and booking updates  
 ✅ **Scalability & Stress Testing** for user authentication  
-✅ **WebSocket Load Testing** for real-time communication services
+✅ **WebSocket Load Testing** for real-time communication services  
 ✅ **Chaos Testing** - simulate API failures  
 ✅ **Centralised Configurations** for easy setup  
 ✅ **Configurable Test Environment** - Easily switch between different environments (Example: local mock API, staging,
 demo)  
 ✅ **Caching and Cache Reset** Performance Tests for booking retrievals  
 ✅ **Realistic Think-Time Patterns** for better user simulation  
-✅ **Best Practices Implemented** (see list below)
+✅ **Best Practices Implemented** (see list below)  
 
 ---
 
@@ -163,37 +166,12 @@ locust -f locustfile_update_profile.py --users 500 --spawn-rate 10 --run-time 5m
 
 ### 🔄 TEST4 - Load & Performance Test for Updating Bookings (`/booking/{id}` endpoint)
 
-Simulates users modifying their bookings
+Simulates users modifying their bookings.  
+Run the below command for load testing the endpoint for **updating booking**  
 
-| **Test Scenario and Test Environment**                                                                                       | **Command**                                                                                                                        |
-|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                               |
-| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`  |
-| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
-
-#### 💡 Specifying the Test Environment using `host` parameter:
-
-- If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
-- If you **explicitly specify `--host`**, the tests will use the provided URL instead.
-- Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
-
-#### 📌 Other Locust Parameters:
-
-Locust provides several parameters to fine-tune test execution:
-
-| Parameter                | Description                                                                                                                                                                                    |
-|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`--users <N>`**        | Defines the total number of concurrent users simulated in the test. Example: `--users 500` will simulate **500 users** sending requests.                                                       |
-| **`--spawn-rate <R>`**   | Specifies how many new users will be added per second, during the rampup phase. Example: `--spawn-rate 10` means Locust will add **10 users per second** until reaching the target user count. |
-| **`--run-time <T>`**     | Defines the total test duration. Example: `--run-time 5m` runs the test for **5 minutes**.                                                                                                     |
-| **`--stop-timeout <S>`** | Allows active requests to complete before stopping the test. Example: `--stop-timeout 5` waits **5 seconds** before forcing users to stop.                                                     |
-
-#### 💡 Notes:
-
-- **The `--stop-timeout <S>` parameter** allows users to gracefully stop all active tasks before shutting down the test.
-- When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up
-  to the specified timeout (e.g., `5s`)** before terminating.
-- This ensures **active requests** can complete before shut down, improving result accuracy.
+```sh
+locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10
+```
 
 ### 🔗 TEST5 & TEST6 - Caching Tests
 
@@ -229,20 +207,73 @@ To test system **recovery after API failures** with some manual intervention:
 7. Observe Locust’s behavior - test how the system handles failures.
 8. There shouldn't be new failures after the API resumption.
 
-
 ### 🔹 TEST8 - Endurance (Soak) Tests
 
 **Endurance testing (soak testing)** evaluates how a system behaves under **sustained load over an extended period.**  
 These tests run for hours to simulate real-world, long-term load scenarios.  
-It helps identify memory leaks, performance degradation, slow resource releases or DB connection exhaustion that might only appear after prolonged execution.  
-All existing tests in this project can be run as **endurance tests without modifying the code** simply by adjusting the `--run-time` parameter to a longer duration.  
+It helps identify memory leaks, performance degradation, slow resource releases or DB connection exhaustion that might
+only appear after prolonged execution.  
+All existing tests in this project can be run as **endurance tests without modifying the code** simply by adjusting the
+`--run-time` parameter to a longer duration.
 
-To perform an **endurance test** on the `/auth` endpoint (for example), run the following command:  
+To perform an **endurance test** on the `/auth` endpoint (for example), run the following command:
 
 ```sh
 locust -f locustfile_auth.py --users 1000 --spawn-rate 5 --run-time 2h
 ```
 
+
+
+
+## 💡 Specifying the Test Environment using `host` parameter:
+
+- If you **do not specify `--host`**, the tests will use the **default Mock API URL** from `config.py`.
+- If you **explicitly specify `--host`**, the tests will use the provided URL instead.
+- Running with `http://xyz-abc.def.com` as `--host` will result in failed requests, as it is a non-existent URL.
+
+| **Test Scenario and Test Environment**                                                                                       | **Command**                                                                                                                        |
+|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Test without specifying the host parameter.** Locust will use the default (Mock API) from `config.py`.                     | `locust -f locustfile_update_booking.py --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`                               |
+| **Test specifying the host parameter explicitly as the (default) Mock API URL.** This is the same as the one in `config.py`. | `locust -f locustfile_update_booking.py --host=http://localhost:8000 --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10`  |
+| **Test specifying the host parameter to a non-existent URL (for demonstration).** Note: All requests will fail.              | `locust -f locustfile_update_booking.py --host=http://xyz-abc.def.com --users 500 --spawn-rate 10 --run-time 5m --stop-timeout 10` |
+
+## 📌 Other Locust Parameters:
+
+Locust provides several parameters to fine-tune test execution:
+
+| Parameter      | Description                                                                                                                                                |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`--users <N>`** | Defines the total number of concurrent users simulated in the test. Example: `--users 500` will simulate **500 users** sending requests.                   |
+| **`--spawn-rate <R>`** | Specifies how many new users will be added per sec, during the ramp-up phase. Example: `--spawn-rate 10` means Locust adds **10 users per second** until reaching the target user count. |
+| **`--run-time <T>`** | Defines the total test duration. Example: `--run-time 5m` runs the test for **5 minutes**.                                                                 |
+| **`--stop-timeout <S>`** | Allows active requests to complete before stopping the test. Example: `--stop-timeout 5` waits **5 seconds** before forcing users to stop.                 |
+| **`--headless`** | Runs the test **without** starting the Locust web UI. Useful for CI/CD and automated performance tests. **Requires** `--host` param **to be specified**. Example: `--headless --host = http://localhost:8000` |
+| **`--csv <filename>`** | Generates CSV reports containing test results. Example: `--csv=load_test` will create files like `load_test_stats.csv`, etc, storing performance metrics.  |
+
+#### 💡 Notes:
+
+- **The `--stop-timeout <S>` parameter** allows users to gracefully stop all active tasks before shutting down the test.
+- When you manually stop the test (`Ctrl + C`) or when the test reaches the specified `run-time`, Locust will **wait up
+  to the specified timeout (Example: `5s`)** before terminating.
+- This ensures **active requests** can complete before shut down, improving result accuracy.   
+
+
+- The `--headless` **mode** is ideal for running tests in **automated environments** (for example, CI/CD pipelines). However, you must explicitly provide the `--host` parameter when using `--headless`, as the web UI is disabled.
+- The `--csv` **parameter** allows you to store performance results for later analysis, but it is **not required for every test** unless reports are needed.
+- By default, Locust saves the CSV files in the current working directory. However, you can **specify a folder** by providing a path before the filename.  
+**Example** (Saving CSV files in a "reports" folder):
+
+```sh
+locust -f locustfile_auth.py --users 500 --spawn-rate 10 --run-time 5m --csv=reports/auth_test
+```
+This will generate files inside `locust_tests/reports/`:
+```
+locust_tests/reports/
+  ├── auth_test_stats.csv
+  ├── auth_test_failures.csv
+  ├── auth_test_exceptions.csv
+  ├── auth_test_distribution.csv
+```
 
 ## ✅ Best Practices
 
@@ -252,7 +283,7 @@ The following best practices have been implemented:
 - Centralised user & booking data loading (`data_loader.py`)
 - Reusable utilities for authentication & data modification (`utils.py`)
 - Logging for debugging & monitoring (API logs + Locust stats)
-- Separate test files for different scenarios (user auth, upload profile pic & update booking tests)
+- Separate test files for different scenarios (user auth, upload profile pic, update booking, caching-specific tests)
 - Configurable Test Environment - Supports running tests against different environments (mock API, staging, etc)
 - Enhanced Error Handling - Robust error handling throughout the test suite.
 - Realistic Think-Time Patterns for better user simulation
