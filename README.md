@@ -100,10 +100,10 @@ Alternatively, if you are inside `mock_api/` directory, use:
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-✔️ This will start both the **WebSocket** and other **REST API** endpoints.
-✔️ Both WebSocket (/ws) and other REST API endpoints will be available for load testing.
+✔️ This will start both the **WebSocket** and other **REST API** endpoints.  
+✔️ Both WebSocket (/ws) and other REST API endpoints will be available for load testing.  
 🔹 The API will be available at `http://localhost:8000/`  
-🔹 WebSocket server will be available at `ws://localhost:8000/ws`
+🔹 WebSocket server will be available at `ws://localhost:8000/ws`  
 
 ### **4️⃣ Generate Sample Data**
 
